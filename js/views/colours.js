@@ -2,6 +2,7 @@
 // and the colour a value turns when its goal is reached. Changes preview live.
 
 import { $, $$, esc, toast, macroTiles, kcalHeader } from '../ui.js';
+import { tintAttrs } from '../nutrition.js';
 import { icon } from '../icons.js';
 import { DEFAULTS, getTheme, saveTheme, applyTheme, DEFAULT_TINT } from '../theme.js';
 
@@ -55,12 +56,13 @@ export async function renderColours(el) {
       </section>`).join('')}
     <section class="card">
       <h2 class="card-title">Food tint</h2>
-      <p class="hint">Foods get a light background in the colour of the macro most of their calories come from. Fatty foods turn the fat colour, protein-rich ones the protein colour.</p>
+      <p class="hint">Each food’s background is split into the macro colours, sized by how many of its calories come from protein, carbs and fat. Half fat, half protein shows half and half.</p>
       <div class="chips tint-chips" role="radiogroup" aria-label="Food tint">${[['off', 'Off'], ['light', 'Light'], ['medium', 'Medium'], ['strong', 'Strong']].map(([v, l]) => `<button type="button" class="chip" role="radio" data-tint="${v}">${l}</button>`).join('')}</div>
       <ul class="entries tint-preview">
-        <li><a class="mx-protein"><span class="info"><strong>Hähnchenbrust</strong><span class="muted small">P 23 · C 0 · F 1.5 per 100 g</span></span></a></li>
-        <li><a class="mx-carbs"><span class="info"><strong>Haferflocken</strong><span class="muted small">P 13 · C 58 · F 6.5 per 100 g</span></span></a></li>
-        <li><a class="mx-fat"><span class="info"><strong>Erdnussbutter</strong><span class="muted small">P 25 · C 20 · F 50 per 100 g</span></span></a></li>
+        <li><a ${tintAttrs({ protein: 23, carbs: 0, fat: 1.5 })}><span class="info"><strong>Hähnchenbrust</strong><span class="muted small">P 23 · C 0 · F 1.5 per 100 g</span></span></a></li>
+        <li><a ${tintAttrs({ protein: 13, carbs: 58, fat: 6.5 })}><span class="info"><strong>Haferflocken</strong><span class="muted small">P 13 · C 58 · F 6.5 per 100 g</span></span></a></li>
+        <li><a ${tintAttrs({ protein: 25, carbs: 20, fat: 50 })}><span class="info"><strong>Erdnussbutter</strong><span class="muted small">P 25 · C 20 · F 50 per 100 g</span></span></a></li>
+        <li><a ${tintAttrs({ protein: 19.7, carbs: 0, fat: 11.3 })}><span class="info"><strong>Puten-Hackfleisch</strong><span class="muted small">P 19.7 · C 0 · F 11.3 per 100 g</span></span></a></li>
       </ul>
     </section>
     <button class="btn primary wide" id="btn-colours-save">Save colours</button>

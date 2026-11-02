@@ -2,7 +2,7 @@
 // browsing TheMealDB (free open recipe database, no macros) and links to creator sites.
 
 import * as db from '../db.js';
-import { fmt, tintClass } from '../nutrition.js';
+import { fmt, tintAttrs } from '../nutrition.js';
 import { $, $$, esc, toast, actionSheet } from '../ui.js';
 import { icon } from '../icons.js';
 import { today } from '../dates.js';
@@ -139,7 +139,7 @@ export function renderRecipe(el, id) {
       <section class="card">
         <h3 class="card-title">Ingredients</h3>
         <ul class="recipe-ingredients">${items.map((i) => `
-          <li class="${tintClass(i.per100).trim()}"><span class="shop-emoji" aria-hidden="true">${emojiFor(i.code) || ''}</span>
+          <li ${tintAttrs(i.per100)}><span class="shop-emoji" aria-hidden="true">${emojiFor(i.code) || ''}</span>
             <span class="info"><span>${esc(i.name)}</span><span class="small muted">${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
             <strong>${fmt(i.grams)} ${esc(i.unit)}</strong></li>`).join('')}
         </ul>

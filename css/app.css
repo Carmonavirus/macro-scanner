@@ -467,19 +467,15 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 /* ---------- v20: Food rows tinted by their main macro ---------- */
 :root { --tint: 13%; }
 @media (prefers-color-scheme: dark) { :root { --tint: 20%; } }
-.mx-protein { --mx: var(--protein); }
-.mx-carbs { --mx: var(--carbs); }
-.mx-fat { --mx: var(--fat); }
-.history a.mx-protein, .history a.mx-carbs, .history a.mx-fat,
-.entries .swipe .swipe-row.mx-protein, .entries .swipe .swipe-row.mx-carbs, .entries .swipe .swipe-row.mx-fat,
-.entries a.mx-protein, .entries a.mx-carbs, .entries a.mx-fat,
-.recipe-ingredients li.mx-protein, .recipe-ingredients li.mx-carbs, .recipe-ingredients li.mx-fat {
-  background: color-mix(in srgb, var(--mx) var(--tint), var(--card));
+.history a.mx, .entries .swipe .swipe-row.mx, .entries a.mx, .recipe-ingredients li.mx {
+  --tp: color-mix(in srgb, var(--protein) var(--tint), var(--card));
+  --tc: color-mix(in srgb, var(--carbs) var(--tint), var(--card));
+  --tf: color-mix(in srgb, var(--fat) var(--tint), var(--card));
+  background: linear-gradient(90deg, var(--tp) 0 var(--a), var(--tc) var(--a) var(--b), var(--tf) var(--b) 100%);
 }
 .entries .swipe .swipe-row { padding-left: 10px; padding-right: 10px; }
-.entries .swipe:has(.swipe-row[class*="mx-"]) { border-radius: 10px; border-bottom: none; margin-top: 4px; }
-.recipe-ingredients li[class*="mx-"] { padding-left: 10px; padding-right: 10px; border-radius: 10px; }
-.recipe-ingredients li[class*="mx-"] { margin-bottom: 4px; border-bottom: none; }
+.entries .swipe:has(.swipe-row.mx) { border-radius: 10px; border-bottom: none; margin-top: 4px; }
+.recipe-ingredients li.mx { padding-left: 10px; padding-right: 10px; border-radius: 10px; margin-bottom: 4px; border-bottom: none; }
 .tint-preview { border-top: none; margin-top: 4px; }
 .tint-preview li { margin-bottom: 4px; }
 .tint-preview a { border-bottom: none; padding: 10px; border-radius: 10px; }
