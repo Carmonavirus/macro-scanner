@@ -2,7 +2,7 @@
 
 import * as db from '../db.js';
 import { today, addDays, dayLabel, isValidKey } from '../dates.js';
-import { totals, entryMacros, fmt } from '../nutrition.js';
+import { totals, entryMacros, fmt, tintClass } from '../nutrition.js';
 import { $, $$, esc, go, macroTiles, kcalHeader, splitBar, pmf, toast, actionSheet } from '../ui.js';
 import { enableSwipe, collapse } from '../swipe.js';
 import { installBanner, backupBanner } from './more.js';
@@ -57,7 +57,7 @@ export async function renderDiary(el, dateParam) {
         </div>
         ${items.length ? `<ul class="entries">${items.map((e) => {
           const v = entryMacros(e);
-          return `<li class="swipe" data-entry="${e.id}"><button type="button" class="swipe-del" tabindex="-1" aria-hidden="true">${icon('trash-2')}<span>Delete</span></button><a class="swipe-row" draggable="false" href="#/entry/${e.id}">
+          return `<li class="swipe" data-entry="${e.id}"><button type="button" class="swipe-del" tabindex="-1" aria-hidden="true">${icon('trash-2')}<span>Delete</span></button><a class="swipe-row${tintClass(e.per100)}" draggable="false" href="#/entry/${e.id}">
             <span class="info"><strong>${esc(e.name)}</strong><span class="muted small item-macros">${fmt(e.grams)} ${esc(e.unit || 'g')} · ${pmf(v)}</span></span>
             <span class="kcal">${fmt(v.kcal, 'kcal')}<small> kcal</small></span></a></li>`;
         }).join('')}</ul>` : ''}
