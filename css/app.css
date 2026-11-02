@@ -413,3 +413,12 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 /* ---------- v15: emoji pictures for basic foods ---------- */
 .history .thumb.emoji { font-size: 1.9rem; line-height: 1; background: var(--bg); border: 1px solid var(--line); }
 .product-img.placeholder.emoji { font-size: 4rem; line-height: 1; }
+
+/* ---------- v16: saved meals ---------- */
+.saved-meal { display: flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding-right: 4px; }
+.saved-add { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 10px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.saved-add .thumb { color: var(--accent); background: var(--bg) !important; }
+.saved-add .thumb .ic { width: 22px; height: 22px; }
+.saved-items { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.saved-plus { color: var(--accent); display: inline-flex; margin-left: auto; }
+#saved { margin-bottom: 18px; }
