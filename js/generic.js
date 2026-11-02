@@ -133,6 +133,9 @@ const fold = (s) => String(s).toLowerCase()
   .replace(/ae/g, 'a').replace(/oe/g, 'o').replace(/ue/g, 'u')
   .normalize('NFD').replace(/[̀-ͯ]/g, '');
 
+// Picture for each food: the phone's own emoji (no download, no licence needed).
+const EMOJI = {"apfel": "🍎", "banane": "🍌", "orange": "🍊", "mandarine": "🍊", "birne": "🍐", "erdbeeren": "🍓", "heidelbeeren": "🫐", "himbeeren": "🍓", "trauben": "🍇", "kiwi": "🥝", "ananas": "🍍", "mango": "🥭", "wassermelone": "🍉", "honigmelone": "🍈", "pfirsich": "🍑", "nektarine": "🍑", "pflaume": "🍑", "kirschen": "🍒", "aprikose": "🍑", "zitrone": "🍋", "grapefruit": "🍊", "avocado": "🥑", "granatapfel": "🍎", "datteln": "🌴", "rosinen": "🍇", "tomate": "🍅", "cherrytomaten": "🍅", "gurke": "🥒", "paprika-rot": "🫑", "paprika-gruen": "🫑", "karotte": "🥕", "brokkoli": "🥦", "blumenkohl": "🥦", "zucchini": "🥒", "aubergine": "🍆", "spinat": "🥬", "kopfsalat": "🥬", "eisbergsalat": "🥬", "rucola": "🥬", "zwiebel": "🧅", "knoblauch": "🧄", "kartoffel": "🥔", "kartoffel-gekocht": "🥔", "suesskartoffel": "🍠", "champignons": "🍄", "erbsen": "🫛", "gruene-bohnen": "🫛", "mais": "🌽", "kohlrabi": "🥬", "weisskohl": "🥬", "rotkohl": "🥬", "spargel": "🥬", "lauch": "🧅", "sellerie": "🥬", "radieschen": "🌱", "kuerbis": "🎃", "rosenkohl": "🥬", "gruenkohl": "🥬", "reis": "🍚", "reis-gekocht": "🍚", "vollkornreis": "🍚", "vollkornreis-gekocht": "🍚", "nudeln": "🍝", "nudeln-gekocht": "🍝", "haferflocken": "🥣", "quinoa": "🌾", "quinoa-gekocht": "🌾", "couscous": "🌾", "vollkornbrot": "🍞", "mischbrot": "🍞", "broetchen": "🥖", "toast": "🍞", "ei": "🥚", "vollmilch": "🥛", "milch-15": "🥛", "magerquark": "🥣", "naturjoghurt": "🥣", "butter": "🧈", "gouda": "🧀", "mozzarella": "🧀", "haehnchenbrust": "🍗", "haehnchenbrust-gebraten": "🍗", "putenbrust": "🍗", "rinderhack": "🥩", "rinderhack-mager": "🥩", "rindfleisch": "🥩", "lachs": "🐟", "thunfisch": "🐟", "tofu": "🧊", "linsen": "🫘", "linsen-gekocht": "🫘", "kichererbsen": "🫘", "kidneybohnen": "🫘", "mandeln": "🌰", "walnuesse": "🌰", "erdnuesse": "🥜", "cashews": "🥜", "erdnussbutter": "🥜", "chiasamen": "🌱", "leinsamen": "🌱", "olivenoel": "🫒", "rapsoel": "🌻", "honig": "🍯", "zucker": "🍬", "zartbitterschokolade": "🍫"};
+
 export const PREFIX = 'gen-';
 
 export const GENERIC = ROWS.map(([id, de, en, kcal, protein, carbs, fat, fiber, sugars, servingGrams, servingLabel, src, words = '']) => ({
@@ -150,10 +153,14 @@ export const GENERIC = ROWS.map(([id, de, en, kcal, protein, carbs, fat, fiber, 
   servingGrams,
   servingLabel,
   source: 'generic',
+  emoji: EMOJI[id] || '🍽️',
   search: fold(`${de} ${en} ${words}`),
 }));
 
 const byCode = new Map(GENERIC.map((g) => [g.code, g]));
+
+/** The emoji for a food code, or null when it isn't a basic food. */
+export const emojiFor = (code) => byCode.get(code)?.emoji || null;
 
 export const isGeneric = (code) => typeof code === 'string' && code.startsWith(PREFIX);
 
