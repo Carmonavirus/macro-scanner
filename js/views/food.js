@@ -8,7 +8,7 @@ import { today, isValidKey, dayLabel } from '../dates.js';
 import {
   MACROS, hasMacros, scale, fmt, isValidGtin, isGermanCode, productFromForm, entryMacros,
 } from '../nutrition.js';
-import { $, $$, esc, go, backTo, nav, macroTiles, parseNum, toast } from '../ui.js';
+import { $, $$, esc, go, backTo, nav, macroTiles, parseNum, toast, amountSlider, bindAmountSlider } from '../ui.js';
 import { icon } from '../icons.js';
 import { searchGeneric, isGeneric, genericProduct } from '../generic.js';
 
@@ -211,6 +211,7 @@ export async function renderProduct(el, code, query) {
     <div class="portion">
       <div class="chips">${opts.map((o) => `<button class="chip" data-g="${o.grams}">${esc(o.label)}</button>`).join('')}</div>
       <label class="amount">Amount <input id="grams" type="text" inputmode="decimal" value="${fmt(start)}"> ${esc(p.unit)}</label>
+      ${amountSlider(start, Math.max(...opts.map((o) => o.grams)), p.unit)}
     </div>
     <div id="tiles"></div>
     <button class="btn primary wide" id="btn-log" ${complete ? '' : 'disabled'}>Add to ${esc(t.meal.name)}</button>
@@ -238,9 +239,11 @@ export async function renderProduct(el, code, query) {
   };
   $$('.chip', el).forEach((c) => c.addEventListener('click', () => {
     gramsInput.value = fmt(Number(c.dataset.g));
+    slider?.sync();
     render();
   }));
   gramsInput.addEventListener('input', render);
+  const slider = bindAmountSlider(el, render);
   render();
 
   $('#btn-log', el).addEventListener('click', async () => {
@@ -334,6 +337,7 @@ export async function renderEntry(el, id) {
         <select id="meal">${meals.map((m) => `<option value="${esc(m.id)}" ${m.id === entry.meal ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>
       </label>
       <label>Amount (${esc(entry.unit || 'g')})<input id="grams" type="text" inputmode="decimal" value="${fmt(entry.grams)}"></label>
+      ${amountSlider(entry.grams, 0, entry.unit || 'g')}
     </div>
     <div id="tiles"></div>
     <div class="actions">
@@ -343,6 +347,7 @@ export async function renderEntry(el, id) {
   `;
   const render = () => { $('#tiles', el).innerHTML = macroTiles(entryMacros({ ...entry, grams: parseNum($('#grams', el).value) || 0 })); };
   $('#grams', el).addEventListener('input', render);
+  bindAmountSlider(el, render);
   render();
 
   const done = () => backTo(nav.diaryDepth, `#/day/${entry.date}`);
