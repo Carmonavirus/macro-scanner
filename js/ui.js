@@ -47,8 +47,8 @@ export function parseHash() {
 
 // ---------- Rendering helpers ----------
 
-export function macroTiles(values, { goals = null } = {}) {
-  return `<div class="tiles">${MAIN_KEYS.map((k) => {
+export function macroTiles(values, { goals = null, keys = MAIN_KEYS } = {}) {
+  return `<div class="tiles tiles-${keys.length}">${keys.map((k) => {
     const m = MACROS.find((x) => x.key === k);
     const goal = goals?.[k];
     if (!(goal > 0)) {
@@ -66,6 +66,23 @@ export function macroTiles(values, { goals = null } = {}) {
   }).join('')}</div>`;
 }
 
+/** Calories as a header line: eaten / goal, progress bar and what's left. */
+export function kcalHeader(kcal, goal, { extra = '' } = {}) {
+  const has = goal > 0;
+  const reached = has && kcal >= goal;
+  const pct = has ? Math.min(100, (kcal / goal) * 100) : 0;
+  const status = !has ? '' : reached
+    ? `${icon('check', { cls: 'check' })} Goal reached${kcal > goal ? ` · ${fmt(kcal - goal, 'kcal')} over` : ''}`
+    : `${fmt(goal - kcal, 'kcal')} left`;
+  return `<div class="kcal-head${reached ? ' reached' : ''}">
+    <div class="kcal-line">
+      <span class="kcal-num"><strong>${fmt(kcal, 'kcal')}</strong>${has ? ` <span class="muted">/ ${fmt(goal, 'kcal')}</span>` : ''} <span class="muted">kcal</span></span>
+      <span class="kcal-status">${status}${extra}</span>
+    </div>
+    ${has ? `<span class="meter" aria-hidden="true"><i style="width:${pct}%"></i></span>` : ''}
+  </div>`;
+}
+
 /** Horizontal bar showing the energy split protein / carbs / fat, with a text legend. */
 export function splitBar(t) {
   const s = energySplit(t);
@@ -79,7 +96,7 @@ export function splitBar(t) {
 }
 
 export function pmf(t) {
-  return `P ${fmt(t.protein)} · C ${fmt(t.carbs)} · F ${fmt(t.fat)}`;
+  return `P ${fmt(t.protein)} g · C ${fmt(t.carbs)} g · F ${fmt(t.fat)} g`;
 }
 
 let toastTimer;

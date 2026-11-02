@@ -3,7 +3,7 @@
 import * as db from '../db.js';
 import { today, addDays, dayLabel, isValidKey } from '../dates.js';
 import { totals, entryMacros, fmt } from '../nutrition.js';
-import { $, $$, esc, go, macroTiles, splitBar, pmf, toast } from '../ui.js';
+import { $, $$, esc, go, macroTiles, kcalHeader, splitBar, pmf, toast } from '../ui.js';
 import { installBanner, backupBanner } from './more.js';
 import { icon } from '../icons.js';
 
@@ -31,14 +31,12 @@ export async function renderDiary(el, dateParam) {
     </div>
 
     <section class="card summary daybar" aria-label="Day total">
-      ${macroTiles(day, { goals })}
+      ${kcalHeader(day.kcal, goals.kcal)}
+      ${macroTiles(day, { goals, keys: ['protein', 'carbs', 'fat'] })}
       <div class="daybar-foot">
-        ${goals.kcal > 0
-          ? `<span>${day.kcal >= goals.kcal ? `Goal reached${day.kcal > goals.kcal ? ` · ${fmt(day.kcal - goals.kcal, 'kcal')} kcal over` : ''}` : `${fmt(goals.kcal - day.kcal, 'kcal')} kcal left`}</span>`
-          : '<span class="muted">Day total</span>'}
-        <a href="#/goals">${hasGoals ? 'Edit goals' : 'Set daily goals'}</a>
+        ${splitBar(day) || '<span class="muted">Nothing logged yet</span>'}
+        <a href="#/goals">${hasGoals ? 'Edit goals' : 'Set goals'}</a>
       </div>
-      ${splitBar(day)}
     </section>
 
     ${allMeals.map((meal) => {
@@ -47,10 +45,11 @@ export async function renderDiary(el, dateParam) {
       return `
       <section class="card meal" data-meal="${esc(meal.id)}">
         <div class="meal-head">
-          <div>
+          <div class="meal-title">
             <h2>${esc(meal.name)}</h2>
-            <p class="muted small">${items.length ? `${fmt(t.kcal, 'kcal')} kcal · ${pmf(t)}` : 'Nothing yet'}</p>
+            <p class="muted small">${items.length ? pmf(t) : 'Nothing yet'}</p>
           </div>
+          ${items.length ? `<span class="meal-kcal">${fmt(t.kcal, 'kcal')}<small> kcal</small></span>` : ''}
           ${meal.id === '_other' ? '' : `<button class="btn icon ghost" data-meal-menu="${esc(meal.id)}" aria-label="Meal options">${icon('ellipsis')}</button>`}
         </div>
         ${items.length ? `<ul class="entries">${items.map((e) => {
