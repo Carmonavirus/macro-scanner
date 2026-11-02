@@ -5,9 +5,10 @@
 //   scans     key: auto   – { code, at } history of scans (v1)
 //   log       key: auto   – diary entries (v2), see addEntry()
 //   days      key: date   – { date, meals: [{ id, name }] } custom meal list for a day (v2)
+//   settings  key: key    – { key, value } e.g. key 'goals' (v3)
 
 const DB_NAME = 'macro-scanner';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 let dbPromise;
 
 function open() {
@@ -26,6 +27,9 @@ function open() {
           const log = db.createObjectStore('log', { keyPath: 'id', autoIncrement: true });
           log.createIndex('date', 'date');
           db.createObjectStore('days', { keyPath: 'date' });
+        }
+        if (old < 3) {
+          db.createObjectStore('settings', { keyPath: 'key' });
         }
       };
       req.onsuccess = () => resolve(req.result);
@@ -114,25 +118,43 @@ export async function setMealsForDate(date, meals) {
   changed();
 }
 
+// ---------- Settings ----------
+
+export async function getSetting(key, fallback = null) {
+  const row = await tx('settings', 'readonly', (s) => s.get(key));
+  return row ? row.value : fallback;
+}
+
+export async function setSetting(key, value) {
+  await tx('settings', 'readwrite', (s) => s.put({ key, value }));
+  changed();
+}
+
+/** Daily goals: { kcal, protein, carbs, fat } – numbers or null when not set. */
+export const getGoals = () => getSetting('goals', { kcal: null, protein: null, carbs: null, fat: null });
+export const setGoals = (goals) => setSetting('goals', goals);
+
 // ---------- Backup ----------
 
 export async function exportAll() {
-  const [products, log, days] = await Promise.all([
+  const [products, log, days, settings] = await Promise.all([
     allProducts(),
     tx('log', 'readonly', (s) => s.getAll()),
     tx('days', 'readonly', (s) => s.getAll()),
+    tx('settings', 'readonly', (s) => s.getAll()),
   ]);
-  return { app: 'macro-scanner', version: 2, exportedAt: new Date().toISOString(), products, log, days };
+  return { app: 'macro-scanner', version: 3, exportedAt: new Date().toISOString(), products, log, days, settings };
 }
 
 export async function importAll(data) {
   if (data?.app !== 'macro-scanner') throw new Error('This is not a Macro Scanner backup file.');
   const db = await open();
   await new Promise((resolve, reject) => {
-    const t = db.transaction(['products', 'log', 'days'], 'readwrite');
+    const t = db.transaction(['products', 'log', 'days', 'settings'], 'readwrite');
     for (const p of data.products || []) t.objectStore('products').put(p);
     for (const e of data.log || []) t.objectStore('log').put(e);
     for (const d of data.days || []) t.objectStore('days').put(d);
+    for (const st of data.settings || []) t.objectStore('settings').put(st);
     t.oncomplete = resolve;
     t.onerror = () => reject(t.error);
   });

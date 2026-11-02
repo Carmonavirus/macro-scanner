@@ -1,6 +1,7 @@
 // Small shared UI helpers.
 
 import { MACROS, MAIN_KEYS, fmt, energySplit } from './nutrition.js';
+import { icon } from './icons.js';
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -46,10 +47,22 @@ export function parseHash() {
 
 // ---------- Rendering helpers ----------
 
-export function macroTiles(values, { unitless = false } = {}) {
+export function macroTiles(values, { goals = null } = {}) {
   return `<div class="tiles">${MAIN_KEYS.map((k) => {
     const m = MACROS.find((x) => x.key === k);
-    return `<div class="tile tile-${k}"><span class="val">${fmt(values[k], k)}</span>${unitless ? '' : `<span class="unit">${m.unit}</span>`}<span class="lbl">${m.label}</span></div>`;
+    const goal = goals?.[k];
+    if (!(goal > 0)) {
+      return `<div class="tile tile-${k}"><span class="val">${fmt(values[k], k)}</span><span class="unit">${m.unit}</span><span class="lbl">${m.label}</span></div>`;
+    }
+    const v = values[k] || 0;
+    const reached = v >= goal;
+    const pct = Math.min(100, (v / goal) * 100);
+    return `<div class="tile tile-${k}${reached ? ' reached' : ''}" title="${m.label}: ${fmt(v, k)} of ${fmt(goal, k)} ${m.unit}${reached ? ', goal reached' : ''}">
+      <span class="val">${fmt(v, k)}</span>
+      <span class="unit">/ ${fmt(goal, k)}${k === 'kcal' ? '' : ' g'}</span>
+      <span class="meter" aria-hidden="true"><i style="width:${pct}%"></i></span>
+      <span class="lbl">${reached ? `${icon('check', { label: 'Goal reached', cls: 'check' })} ` : ''}${m.label}</span>
+    </div>`;
   }).join('')}</div>`;
 }
 

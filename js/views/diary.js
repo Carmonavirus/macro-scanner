@@ -5,10 +5,12 @@ import { today, addDays, dayLabel, isValidKey } from '../dates.js';
 import { totals, entryMacros, fmt } from '../nutrition.js';
 import { $, $$, esc, go, macroTiles, splitBar, pmf, toast } from '../ui.js';
 import { installBanner, backupBanner } from './more.js';
+import { icon } from '../icons.js';
 
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
-  const [meals, entries] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date)]);
+  const [meals, entries, goals] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals()]);
+  const hasGoals = Object.values(goals).some((g) => g > 0);
   const day = totals(entries);
 
   // Entries whose meal no longer exists (shouldn't happen, but never hide food)
@@ -20,17 +22,22 @@ export async function renderDiary(el, dateParam) {
     ${installBanner()}
     ${entries.length ? backupBanner() : ''}
     <div class="datenav">
-      <button class="btn icon" data-day="${addDays(date, -1)}" aria-label="Previous day">‹</button>
+      <button class="btn icon" data-day="${addDays(date, -1)}" aria-label="Previous day">${icon('chevron-left')}</button>
       <label class="datelabel">
-        <span>${esc(dayLabel(date))}</span>
+        <span class="with-ic">${icon('calendar')} ${esc(dayLabel(date))}</span>
         <input type="date" id="pick-date" value="${date}" aria-label="Pick a date">
       </label>
-      <button class="btn icon" data-day="${addDays(date, 1)}" aria-label="Next day">›</button>
+      <button class="btn icon" data-day="${addDays(date, 1)}" aria-label="Next day">${icon('chevron-right')}</button>
     </div>
 
-    <section class="card summary">
-      <h2 class="card-title">Day total</h2>
-      ${macroTiles(day)}
+    <section class="card summary daybar" aria-label="Day total">
+      ${macroTiles(day, { goals })}
+      <div class="daybar-foot">
+        ${goals.kcal > 0
+          ? `<span>${day.kcal >= goals.kcal ? `Goal reached${day.kcal > goals.kcal ? ` · ${fmt(day.kcal - goals.kcal, 'kcal')} kcal over` : ''}` : `${fmt(goals.kcal - day.kcal, 'kcal')} kcal left`}</span>`
+          : '<span class="muted">Day total</span>'}
+        <a href="#/goals">${hasGoals ? 'Edit goals' : 'Set daily goals'}</a>
+      </div>
       ${splitBar(day)}
     </section>
 
@@ -44,7 +51,7 @@ export async function renderDiary(el, dateParam) {
             <h2>${esc(meal.name)}</h2>
             <p class="muted small">${items.length ? `${fmt(t.kcal, 'kcal')} kcal · ${pmf(t)}` : 'Nothing yet'}</p>
           </div>
-          ${meal.id === '_other' ? '' : `<button class="btn icon ghost" data-meal-menu="${esc(meal.id)}" aria-label="Meal options">⋯</button>`}
+          ${meal.id === '_other' ? '' : `<button class="btn icon ghost" data-meal-menu="${esc(meal.id)}" aria-label="Meal options">${icon('ellipsis')}</button>`}
         </div>
         ${items.length ? `<ul class="entries">${items.map((e) => {
           const v = entryMacros(e);
@@ -52,11 +59,11 @@ export async function renderDiary(el, dateParam) {
             <span class="info"><strong>${esc(e.name)}</strong><span class="muted small">${fmt(e.grams)} ${esc(e.unit || 'g')}${e.brand ? ' · ' + esc(e.brand) : ''}</span></span>
             <span class="kcal">${fmt(v.kcal, 'kcal')}<small> kcal</small></span></a></li>`;
         }).join('')}</ul>` : ''}
-        ${meal.id === '_other' ? '' : `<button class="btn add" data-add="${esc(meal.id)}">＋ Add food</button>`}
+        ${meal.id === '_other' ? '' : `<button class="btn add" data-add="${esc(meal.id)}">${icon('plus')} Add food</button>`}
       </section>`;
     }).join('')}
 
-    <button class="btn wide" id="btn-add-meal">＋ Add another meal</button>
+    <button class="btn wide with-ic" id="btn-add-meal">${icon('plus')} Add another meal</button>
   `;
 
   $$('[data-day]', el).forEach((b) => b.addEventListener('click', () => go(`#/day/${b.dataset.day}`, { replace: true })));

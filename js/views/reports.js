@@ -7,6 +7,7 @@ import {
 } from '../dates.js';
 import { totals, fmt } from '../nutrition.js';
 import { $, $$, esc, go, macroTiles, splitBar } from '../ui.js';
+import { icon } from '../icons.js';
 
 export async function renderReports(el, period = 'week', dateParam) {
   if (!['day', 'week', 'month'].includes(period)) period = 'week';
@@ -27,7 +28,7 @@ export async function renderReports(el, period = 'week', dateParam) {
     prev = addMonths(from, -1); next = addMonths(from, 1);
   }
 
-  const entries = await db.entriesBetween(from, to);
+  const [entries, goals] = await Promise.all([db.entriesBetween(from, to), db.getGoals()]);
   const days = range(from, to);
   const byDay = days.map((d) => ({ date: d, entries: entries.filter((e) => e.date === d) }))
     .map((d) => ({ ...d, t: totals(d.entries) }));
@@ -39,12 +40,12 @@ export async function renderReports(el, period = 'week', dateParam) {
   if (!entries.length) {
     body = `<p class="empty card">Nothing logged ${period === 'day' ? 'on this day' : `in this ${period}`}.</p>`;
   } else if (period === 'day') {
-    body = await dayBody(date, entries, sum);
+    body = await dayBody(date, entries, sum, goals);
   } else {
     body = `
       <section class="card">
         <h2 class="card-title">Average per logged day <span class="muted small">(${logged.length} of ${days.length} days logged)</span></h2>
-        ${macroTiles(avg)}
+        ${macroTiles(avg, { goals })}
         ${splitBar(sum)}
       </section>
       <section class="card">
@@ -66,9 +67,9 @@ export async function renderReports(el, period = 'week', dateParam) {
   el.innerHTML = `
     ${tabs}
     <div class="datenav">
-      <button class="btn icon" data-to="${prev}" aria-label="Previous">‹</button>
+      <button class="btn icon" data-to="${prev}" aria-label="Previous">${icon('chevron-left')}</button>
       <span class="datelabel"><span>${esc(label)}</span></span>
-      <button class="btn icon" data-to="${next}" aria-label="Next">›</button>
+      <button class="btn icon" data-to="${next}" aria-label="Next">${icon('chevron-right')}</button>
     </div>
     ${body}
   `;
@@ -94,14 +95,14 @@ export async function renderReports(el, period = 'week', dateParam) {
   });
 }
 
-async function dayBody(date, entries, sum) {
+async function dayBody(date, entries, sum, goals) {
   const meals = await db.mealsForDate(date);
   const rows = meals.map((m) => ({ name: m.name, t: totals(entries.filter((e) => e.meal === m.id)), n: entries.filter((e) => e.meal === m.id).length }))
     .filter((r) => r.n);
   return `
     <section class="card">
       <h2 class="card-title">Day total</h2>
-      ${macroTiles(sum)}
+      ${macroTiles(sum, { goals })}
       ${splitBar(sum)}
     </section>
     <section class="card">

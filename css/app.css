@@ -8,6 +8,9 @@
   --accent-text: #ffffff;
   --error: #b42318;
   --notice: #fff7e0;
+  --goal: #dcfce7;
+  --goal-line: #86efac;
+  --goal-ink: #166534;
   --kcal: #c2410c;
   --protein: #1d4ed8;
   --carbs: #a16207;
@@ -25,6 +28,9 @@
     --accent-text: #06201d;
     --error: #f97066;
     --notice: #2d2614;
+    --goal: #163a26;
+    --goal-line: #2f7a4d;
+    --goal-ink: #86efac;
     --kcal: #fb923c;
     --protein: #4a8ef0;
     --carbs: #c08a10;
@@ -165,9 +171,9 @@ legend { padding: 0 6px; font-size: .9rem; color: var(--muted); }
   flex: 1; max-width: 160px; display: flex; flex-direction: column; align-items: center; gap: 2px;
   color: var(--muted); text-decoration: none; font-size: .78rem; padding: 4px; border-radius: 10px;
 }
-.tabbar a span { font-size: 1.25rem; line-height: 1; filter: grayscale(1); opacity: .7; }
+.tabbar a span { display: flex; }
+.tabbar a .ic { width: 24px; height: 24px; }
 .tabbar a.active { color: var(--accent); font-weight: 600; }
-.tabbar a.active span { filter: none; opacity: 1; }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
 .card-title { font-size: 1rem; margin: 0 0 10px; }
@@ -245,3 +251,44 @@ select { font: inherit; color: var(--text); background: var(--card); border: 1px
   opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 20; max-width: calc(100% - 32px);
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- v4: goals, sticky day total ---------- */
+.daybar { position: sticky; top: var(--topbar-h, 56px); z-index: 4; padding: 10px; box-shadow: 0 6px 12px -10px rgba(0,0,0,.35); }
+.daybar .tiles { gap: 6px; margin-bottom: 6px; }
+.daybar .tile { padding: 8px 4px; }
+.daybar .tile .val { font-size: 1.2rem; }
+.daybar-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .85rem; margin-bottom: 4px; }
+.daybar-foot a { color: var(--accent); }
+.tile .meter { display: block; height: 4px; margin: 5px 6px 2px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.tile .meter i { display: block; height: 100%; background: currentColor; border-radius: 2px; }
+.tile-kcal .meter i { background: var(--kcal); }
+.tile-protein .meter i { background: var(--protein); }
+.tile-carbs .meter i { background: var(--carbs); }
+.tile-fat .meter i { background: var(--fat); }
+.card .tile.reached, .tile.reached { background: var(--goal); border-color: var(--goal-line); }
+.tile.reached .meter i { background: var(--goal-ink); }
+
+/* ---------- Icons (Lucide) ---------- */
+.ic { width: 20px; height: 20px; flex: none; display: inline-block; vertical-align: middle; }
+.with-ic { display: inline-flex; align-items: center; gap: 8px; }
+p.with-ic, h2.with-ic { display: flex; }
+.btn.with-ic, .btn.add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.btn.add .ic, .btn.small .ic { width: 18px; height: 18px; }
+.btn.icon { display: inline-grid; place-items: center; }
+.btn.small.icon { width: 36px; }
+.btn.round { display: grid; place-items: center; }
+.btn.round .ic { width: 22px; height: 22px; }
+.topbar-back { display: grid; place-items: center; }
+.topbar-back .ic { width: 22px; height: 22px; }
+.datelabel .ic { width: 18px; height: 18px; color: var(--muted); }
+.history .thumb { color: var(--muted); background: var(--bg); }
+.history .thumb .ic { width: 24px; height: 24px; }
+.product-img.placeholder { color: var(--muted); }
+.product-img.placeholder .ic { width: 36px; height: 36px; }
+.ic.ok { color: var(--goal-ink); }
+.ic.warn { color: var(--error); }
+.tile .check { width: 13px; height: 13px; vertical-align: -2px; color: var(--goal-ink); }
+.searchbox { position: relative; display: block; margin-bottom: 10px; }
+.searchbox .ic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--muted); pointer-events: none; }
+.searchbox input { padding-left: 38px; }
+#search { margin-bottom: 0; }

@@ -26,6 +26,8 @@ Live: https://carmonavirus.github.io/macro-scanner/
 | `js/views/diary.js` | Daily diary with meals and totals |
 | `js/views/food.js` | Add food: scan, search, amount, manual entry, edit entry |
 | `js/views/reports.js` | Day / week / month reports |
+| `js/views/goals.js` | Daily kcal / macro goals |
+| `js/icons.js` | Lucide icons used by the app (ISC) |
 | `js/views/more.js` | Install to home screen, cloud backup setup, backup file |
 | `js/sync.js` | Automatic backup to a secret GitHub Gist (token with `gist` scope, kept on the phone) |
 | `js/scanner.js` | Camera + barcode detection |

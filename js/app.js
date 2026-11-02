@@ -6,6 +6,7 @@
 // #/edit/<code|new>?d=&m=&why=     enter nutrition values by hand
 // #/entry/<id>                     change or remove a diary entry
 // #/reports/<day|week|month>/<date>
+// #/goals                          daily kcal / macro goals
 // #/more                           install, backup, about
 
 import { $, $$, parseHash, setNavigateHandler, go, depth, nav } from './ui.js';
@@ -13,7 +14,18 @@ import { renderDiary } from './views/diary.js';
 import { renderAdd, renderProduct, renderEdit, renderEntry, stopCamera } from './views/food.js';
 import { renderReports } from './views/reports.js';
 import { renderMore } from './views/more.js';
+import { renderGoals } from './views/goals.js';
+import { icon } from './icons.js';
 import { startAutoSync, requestPersistence } from './sync.js';
+
+// Static icons in the shell
+$$('[data-icon]').forEach((el) => { el.innerHTML = icon(el.dataset.icon); });
+
+// Keep the sticky day total just below the header
+const topbar = $('.topbar');
+const setTopbarH = () => document.documentElement.style.setProperty('--topbar-h', `${topbar.offsetHeight}px`);
+new ResizeObserver(setTopbarH).observe(topbar);
+setTopbarH();
 
 const view = $('#view');
 const title = $('#title');
@@ -28,6 +40,7 @@ const ROUTES = {
   entry: { tab: 'diary', title: 'Edit entry', render: ([id]) => renderEntry(view, id) },
   reports: { tab: 'reports', title: 'Reports', root: true, render: ([p, d]) => renderReports(view, p, d) },
   more: { tab: 'more', title: 'More', root: true, render: () => renderMore(view) },
+  goals: { tab: 'diary', title: 'Daily goals', render: () => renderGoals(view) },
 };
 
 let renderSeq = 0;
