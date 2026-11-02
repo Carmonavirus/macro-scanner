@@ -1,0 +1,29 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'de.carmonavirus.macrowidget'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'de.carmonavirus.macrowidget'
+        minSdk 26
+        targetSdk 35
+        versionCode (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int
+        versionName "1.0.${System.getenv('GITHUB_RUN_NUMBER') ?: '0'}"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Signed with the build machine's debug key: no secrets in this public repo.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

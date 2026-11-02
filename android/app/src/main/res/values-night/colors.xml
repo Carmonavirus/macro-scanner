@@ -1,0 +1,13 @@
+<resources>
+    <color name="card">#1C1C1C</color>
+    <color name="tile">#262626</color>
+    <color name="text">#ECECEC</color>
+    <color name="muted">#A3A3A3</color>
+    <color name="track">#3A3A3A</color>
+    <color name="accent">#E0573A</color>
+    <color name="protein">#4A8EF0</color>
+    <color name="carbs">#C08A10</color>
+    <color name="fat">#A463EC</color>
+    <color name="goal">#163A26</color>
+    <color name="goal_ink">#86EFAC</color>
+</resources>

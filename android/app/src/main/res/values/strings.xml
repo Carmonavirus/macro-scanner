@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Macro Widget</string>
+    <string name="widget_name">Today\'s macros</string>
+    <string name="widget_desc">Calories and macros you have eaten today, from Macro Scanner.</string>
+</resources>

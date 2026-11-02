@@ -1,0 +1,14 @@
+<resources>
+    <color name="card">#FFFFFF</color>
+    <color name="tile">#F5F5F5</color>
+    <color name="text">#1F1F1F</color>
+    <color name="muted">#5B5B5B</color>
+    <color name="track">#E2E2E2</color>
+    <color name="accent">#AB2200</color>
+    <color name="protein">#1D4ED8</color>
+    <color name="carbs">#A16207</color>
+    <color name="fat">#7E22CE</color>
+    <color name="goal">#DCFCE7</color>
+    <color name="goal_ink">#166534</color>
+    <color name="launcher_bg">#AB2200</color>
+</resources>
