@@ -148,3 +148,40 @@ export function actionSheet(title, items, iconFn) {
 
 /** Shared navigation state: history depth of the diary we came from. */
 export const nav = { diaryDepth: null };
+
+// ---------- Amount slider (works together with the typed amount) ----------
+
+const sliderMax = (v) => Math.min(3000, Math.max(300, Math.ceil((v * 2) / 50) * 50));
+
+/** A range input for the amount; `biggest` is the largest portion we know of. */
+export function amountSlider(value, biggest = 0, unit = 'g') {
+  const max = sliderMax(Math.max(value, biggest));
+  return `<div class="amount-slider">
+    <input type="range" id="grams-range" min="0" max="${max}" step="1" value="${Math.min(value, max)}" aria-label="Amount in ${esc(unit)}">
+    <div class="range-scale muted small"><span>0</span><span>${max} ${esc(unit)}</span></div>
+  </div>`;
+}
+
+/** Keep slider and text box in sync. onChange runs after either one moves. */
+export function bindAmountSlider(root, onChange) {
+  const range = $('#grams-range', root);
+  const input = $('#grams', root);
+  if (!range || !input) return;
+  const scale = $('.range-scale span:last-child', root);
+  const unit = scale.textContent.split(' ').slice(1).join(' ');
+  const setMax = (v) => {
+    if (v > Number(range.max)) { range.max = sliderMax(v); scale.textContent = `${range.max} ${unit}`; }
+  };
+  range.addEventListener('input', () => {
+    const v = Number(range.value);
+    // Coarser steps for big amounts so the thumb doesn't jitter
+    const snapped = v >= 100 ? Math.round(v / 5) * 5 : v;
+    input.value = String(snapped);
+    onChange();
+  });
+  input.addEventListener('input', () => {
+    const v = parseNum(input.value);
+    if (Number.isFinite(v) && v >= 0) { setMax(v); range.value = String(v); }
+  });
+  return { sync: () => { const v = parseNum(input.value) || 0; setMax(v); range.value = String(v); } };
+}
