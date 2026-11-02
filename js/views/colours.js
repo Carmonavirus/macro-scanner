@@ -3,7 +3,7 @@
 
 import { $, $$, esc, toast, macroTiles, kcalHeader } from '../ui.js';
 import { icon } from '../icons.js';
-import { DEFAULTS, getTheme, saveTheme, applyTheme } from '../theme.js';
+import { DEFAULTS, getTheme, saveTheme, applyTheme, DEFAULT_TINT } from '../theme.js';
 
 const GROUPS = [
   { title: 'App', rows: [
@@ -25,7 +25,7 @@ const GROUPS = [
 
 export async function renderColours(el) {
   const saved = await getTheme();
-  let theme = { ...DEFAULTS, ...saved };
+  let theme = { ...DEFAULTS, tint: DEFAULT_TINT, ...saved };
   let done = false;
 
   const preview = () => `
@@ -53,6 +53,16 @@ export async function renderColours(el) {
             </div>
           </div>`).join('')}
       </section>`).join('')}
+    <section class="card">
+      <h2 class="card-title">Food tint</h2>
+      <p class="hint">Foods get a light background in the colour of the macro most of their calories come from. Fatty foods turn the fat colour, protein-rich ones the protein colour.</p>
+      <div class="chips tint-chips" role="radiogroup" aria-label="Food tint">${[['off', 'Off'], ['light', 'Light'], ['medium', 'Medium'], ['strong', 'Strong']].map(([v, l]) => `<button type="button" class="chip" role="radio" data-tint="${v}">${l}</button>`).join('')}</div>
+      <ul class="entries tint-preview">
+        <li><a class="mx-protein"><span class="info"><strong>Hähnchenbrust</strong><span class="muted small">P 23 · C 0 · F 1.5 per 100 g</span></span></a></li>
+        <li><a class="mx-carbs"><span class="info"><strong>Haferflocken</strong><span class="muted small">P 13 · C 58 · F 6.5 per 100 g</span></span></a></li>
+        <li><a class="mx-fat"><span class="info"><strong>Erdnussbutter</strong><span class="muted small">P 25 · C 20 · F 50 per 100 g</span></span></a></li>
+      </ul>
+    </section>
     <button class="btn primary wide" id="btn-colours-save">Save colours</button>
     <button class="btn wide with-ic" id="btn-colours-reset">${icon('rotate-ccw')} Reset all to default</button>
   `;
@@ -63,6 +73,7 @@ export async function renderColours(el) {
       const k = row.dataset.key;
       $$('.swatch', row).forEach((s) => s.classList.toggle('on', s.dataset.preset.toLowerCase() === theme[k].toLowerCase()));
     });
+    $$('[data-tint]', el).forEach((b) => { const on = b.dataset.tint === theme.tint; b.classList.toggle('active', on); b.setAttribute('aria-checked', on); });
     applyTheme(theme);
   };
   const set = (k, v) => { theme = { ...theme, [k]: v.toLowerCase() }; sync(); };
@@ -72,7 +83,8 @@ export async function renderColours(el) {
     $$('[data-preset]', row).forEach((b) => b.addEventListener('click', () => set(row.dataset.key, b.dataset.preset)));
     $('[data-reset]', row).addEventListener('click', () => set(row.dataset.key, DEFAULTS[row.dataset.key]));
   });
-  $('#btn-colours-reset', el).addEventListener('click', () => { theme = { ...DEFAULTS }; sync(); });
+  $$('[data-tint]', el).forEach((b) => b.addEventListener('click', () => { theme = { ...theme, tint: b.dataset.tint }; sync(); }));
+  $('#btn-colours-reset', el).addEventListener('click', () => { theme = { ...DEFAULTS, tint: DEFAULT_TINT }; sync(); });
   $('#btn-colours-save', el).addEventListener('click', async () => {
     await saveTheme(theme);
     done = true;

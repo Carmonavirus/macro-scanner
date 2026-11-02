@@ -15,6 +15,10 @@ export const DEFAULTS = {
 
 const CSS_KEY = 'themeCss';
 
+// How strongly food rows are tinted in their main macro's colour: [light mode, dark mode].
+export const TINTS = { off: [0, 0], light: [7, 12], medium: [13, 20], strong: [22, 32] };
+export const DEFAULT_TINT = 'medium';
+
 // Readable text (black or white) on top of a colour.
 function inkOn(hex) {
   const n = parseInt(hex.slice(1), 16);
@@ -31,8 +35,10 @@ const isHex = (v) => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
 /** Build the CSS for a theme. Only colours that differ from the defaults are overridden. */
 export function themeCss(theme = {}) {
   const t = Object.fromEntries(Object.entries(theme).filter(([k, v]) => k in DEFAULTS && isHex(v) && v.toLowerCase() !== DEFAULTS[k]));
-  if (!Object.keys(t).length) return '';
+  const tint = theme.tint in TINTS && theme.tint !== DEFAULT_TINT ? TINTS[theme.tint] : null;
+  if (!Object.keys(t).length && !tint) return '';
   const light = [], dark = [];
+  if (tint) { light.push(`--tint:${tint[0]}%`); dark.push(`--tint:${tint[1]}%`); }
   // In dark mode colours are lifted a little towards white so they stay readable on the dark background.
   const lift = (v, pct) => `color-mix(in srgb, ${v} ${pct}%, #ffffff)`;
   if (t.accent) {

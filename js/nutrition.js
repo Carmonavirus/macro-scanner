@@ -100,3 +100,18 @@ export function energySplit(t) {
   if (!sum) return { protein: 0, carbs: 0, fat: 0 };
   return { protein: (p / sum) * 100, carbs: (c / sum) * 100, fat: (f / sum) * 100 };
 }
+
+/**
+ * The macro that gives most of a food's calories, when it clearly dominates
+ * (at least 45 % of the calories from protein, carbs and fat). null otherwise.
+ */
+export function mainMacro(per100) {
+  const p = (per100?.protein || 0) * 4, c = (per100?.carbs || 0) * 4, f = (per100?.fat || 0) * 9;
+  const sum = p + c + f;
+  if (!(sum > 0)) return null;
+  const [key, val] = [['protein', p], ['carbs', c], ['fat', f]].sort((a, b) => b[1] - a[1])[0];
+  return val / sum >= 0.45 ? key : null;
+}
+
+/** CSS class that tints a food row in its main macro's colour ('' when none). */
+export const tintClass = (per100) => { const k = mainMacro(per100); return k ? ` mx-${k}` : ''; };
