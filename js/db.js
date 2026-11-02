@@ -4,7 +4,7 @@
 //   products  key: code   – cached Open Food Facts products and manually entered ones (v1)
 //   scans     key: auto   – { code, at } history of scans (v1)
 //   log       key: auto   – diary entries (v2), see addEntry()
-//   days      key: date   – { date, meals: [{ id, name }] } custom meal list for a day (v2)
+//   days      key: date   – { date, meals?: [{ id, name }], taken?: { suppId: true } } (v2)
 //   settings  key: key    – { key, value } e.g. key 'goals' (v3)
 
 const DB_NAME = 'macro-scanner';
@@ -115,14 +115,37 @@ export const DEFAULT_MEALS = [
   { id: 'snacks', name: 'Snacks' },
 ];
 
+const getDay = (date) => tx('days', 'readonly', (s) => s.get(date));
+
+/** Merge fields into a day's record (keeps the other fields). */
+async function updateDay(date, fields) {
+  const day = (await getDay(date)) || { date };
+  await tx('days', 'readwrite', (s) => s.put({ ...day, ...fields, date }));
+  changed();
+}
+
 export async function mealsForDate(date) {
-  const day = await tx('days', 'readonly', (s) => s.get(date));
+  const day = await getDay(date);
   return day?.meals || DEFAULT_MEALS.map((m) => ({ ...m }));
 }
 
-export async function setMealsForDate(date, meals) {
-  await tx('days', 'readwrite', (s) => s.put({ date, meals }));
-  changed();
+export const setMealsForDate = (date, meals) => updateDay(date, { meals });
+
+// ---------- Supplements ----------
+// The list lives in settings ('supplements': [{ id, name, dose }]);
+// what was taken on a day lives on that day's record ('taken': { id: true }).
+
+export const getSupplements = () => getSetting('supplements', []);
+export const setSupplements = (list) => setSetting('supplements', list);
+
+export async function takenOn(date) {
+  return (await getDay(date))?.taken || {};
+}
+
+export async function setTaken(date, id, value) {
+  const taken = { ...(await takenOn(date)) };
+  if (value) taken[id] = true; else delete taken[id];
+  await updateDay(date, { taken });
 }
 
 // ---------- Settings ----------
