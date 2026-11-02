@@ -4,7 +4,7 @@ import * as db from '../db.js';
 import { today, addDays, dayLabel, isValidKey } from '../dates.js';
 import { totals, entryMacros, fmt } from '../nutrition.js';
 import { $, $$, esc, go, macroTiles, splitBar, pmf, toast } from '../ui.js';
-import { installBanner } from './more.js';
+import { installBanner, backupBanner } from './more.js';
 
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
@@ -18,6 +18,7 @@ export async function renderDiary(el, dateParam) {
 
   el.innerHTML = `
     ${installBanner()}
+    ${entries.length ? backupBanner() : ''}
     <div class="datenav">
       <button class="btn icon" data-day="${addDays(date, -1)}" aria-label="Previous day">‹</button>
       <label class="datelabel">

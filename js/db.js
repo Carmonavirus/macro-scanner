@@ -35,6 +35,9 @@ function open() {
   return dbPromise;
 }
 
+/** Fired after every change to the user's data, so backup can run. */
+const changed = (r) => { window.dispatchEvent(new Event('datachanged')); return r; };
+
 async function tx(store, mode, fn) {
   const db = await open();
   return new Promise((resolve, reject) => {
@@ -48,7 +51,7 @@ async function tx(store, mode, fn) {
 // ---------- Products ----------
 
 export const getProduct = (code) => tx('products', 'readonly', (s) => s.get(code));
-export const putProduct = (product) => tx('products', 'readwrite', (s) => s.put(product));
+export const putProduct = (product) => tx('products', 'readwrite', (s) => s.put(product)).then(changed);
 export const allProducts = () => tx('products', 'readonly', (s) => s.getAll());
 
 export async function addScan(code) {
@@ -82,10 +85,10 @@ export async function recentProducts(limit = 30) {
 //          per100: {kcal, protein, ...}, at: ISO }
 // per100 is a snapshot, so later product edits don't change past days.
 
-export const addEntry = (entry) => tx('log', 'readwrite', (s) => s.add({ ...entry, at: new Date().toISOString() }));
+export const addEntry = (entry) => tx('log', 'readwrite', (s) => s.add({ ...entry, at: new Date().toISOString() })).then(changed);
 export const getEntry = (id) => tx('log', 'readonly', (s) => s.get(id));
-export const putEntry = (entry) => tx('log', 'readwrite', (s) => s.put(entry));
-export const deleteEntry = (id) => tx('log', 'readwrite', (s) => s.delete(id));
+export const putEntry = (entry) => tx('log', 'readwrite', (s) => s.put(entry)).then(changed);
+export const deleteEntry = (id) => tx('log', 'readwrite', (s) => s.delete(id)).then(changed);
 
 export const entriesForDate = (date) =>
   tx('log', 'readonly', (s) => s.index('date').getAll(date));
@@ -108,6 +111,7 @@ export async function mealsForDate(date) {
 
 export async function setMealsForDate(date, meals) {
   await tx('days', 'readwrite', (s) => s.put({ date, meals }));
+  changed();
 }
 
 // ---------- Backup ----------
@@ -132,4 +136,13 @@ export async function importAll(data) {
     t.oncomplete = resolve;
     t.onerror = () => reject(t.error);
   });
+}
+
+/** Rough count of what's stored, for status messages. */
+export async function counts() {
+  const [entries, products] = await Promise.all([
+    tx('log', 'readonly', (s) => s.count()),
+    tx('products', 'readonly', (s) => s.count()),
+  ]);
+  return { entries, products };
 }

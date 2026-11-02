@@ -13,6 +13,7 @@ import { renderDiary } from './views/diary.js';
 import { renderAdd, renderProduct, renderEdit, renderEntry, stopCamera } from './views/food.js';
 import { renderReports } from './views/reports.js';
 import { renderMore } from './views/more.js';
+import { startAutoSync, requestPersistence } from './sync.js';
 
 const view = $('#view');
 const title = $('#title');
@@ -68,6 +69,9 @@ back.addEventListener('click', () => (depth() > 0 ? history.back() : go('#/', { 
 
 if (!history.state) history.replaceState({ depth: 0 }, '', location.hash || '#/');
 route();
+
+requestPersistence();
+startAutoSync();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

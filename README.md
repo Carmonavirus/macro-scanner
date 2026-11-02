@@ -13,7 +13,8 @@ Live: https://carmonavirus.github.io/macro-scanner/
 - **Missing data:** if a product is unknown or has no macros, you type the values
   from the pack and they're remembered.
 - **Privacy:** everything is stored in the browser's IndexedDB on the phone.
-  No account, no server.
+  No account, no server. Optional automatic backup goes to a secret Gist in the
+  user's own GitHub account.
 
 ## Files
 
@@ -25,7 +26,8 @@ Live: https://carmonavirus.github.io/macro-scanner/
 | `js/views/diary.js` | Daily diary with meals and totals |
 | `js/views/food.js` | Add food: scan, search, amount, manual entry, edit entry |
 | `js/views/reports.js` | Day / week / month reports |
-| `js/views/more.js` | Install to home screen, backup / restore |
+| `js/views/more.js` | Install to home screen, cloud backup setup, backup file |
+| `js/sync.js` | Automatic backup to a secret GitHub Gist (token with `gist` scope, kept on the phone) |
 | `js/scanner.js` | Camera + barcode detection |
 | `js/off.js` | Open Food Facts lookup, maps to the app's product format |
 | `js/nutrition.js` | Product format, macro maths, barcode validation |

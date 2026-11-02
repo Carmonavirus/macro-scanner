@@ -3,6 +3,7 @@
 import * as db from '../db.js';
 import { $, esc, toast } from '../ui.js';
 import { today } from '../dates.js';
+import * as sync from '../sync.js';
 
 // ---------- Install (Add to Home screen) ----------
 let deferredPrompt = null;
@@ -56,25 +57,29 @@ export function renderMore(el) {
            <ol class="steps">
              <li>Open this page in <strong>Chrome</strong> on your phone.</li>
              <li>Tap the <strong>⋮</strong> menu in the top right.</li>
-             <li>Tap <strong>Add to Home screen</strong> (or <strong>Install app</strong>), then <strong>Install</strong>.</li>
+             <li>Tap <strong>Install app</strong> (on some phones: <strong>Add to Home screen</strong>), then confirm.</li>
            </ol>`}`}
     </section>
 
+    <section class="card" id="cloud"></section>
+
     <section class="card">
-      <h2 class="card-title">Backup</h2>
-      <p class="muted">Your diary lives only on this phone. Save a backup file now and then, and use it to move to a new phone.</p>
+      <h2 class="card-title">Backup file</h2>
+      <p class="muted">Save a copy of everything as a file, or restore one. Handy if you ever stop using cloud backup.</p>
       <div class="actions">
-        <button class="btn" id="btn-export">⬇️ Save backup</button>
-        <label class="btn">⬆️ Restore backup<input type="file" id="file-import" accept="application/json,.json" hidden></label>
+        <button class="btn" id="btn-export">⬇️ Save backup file</button>
+        <label class="btn">⬆️ Restore from file<input type="file" id="file-import" accept="application/json,.json" hidden></label>
       </div>
     </section>
 
     <section class="card">
       <h2 class="card-title">About</h2>
       <p class="muted small">Product data © <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> contributors (ODbL).
-      Barcode reading by ZXing (MIT). No account, no tracking. Everything stays on this phone.</p>
+      Barcode reading by ZXing (MIT). No account, no tracking. Your data stays on this phone, plus your own GitHub account if cloud backup is on.</p>
     </section>
   `;
+
+  renderCloud($('#cloud', el));
 
   $('#btn-export', el).addEventListener('click', async () => {
     const data = await db.exportAll();
@@ -91,7 +96,8 @@ export function renderMore(el) {
     if (!file) return;
     try {
       await db.importAll(JSON.parse(await file.text()));
-      toast('Backup restored');
+      const c = await db.counts();
+      toast(`Backup restored: ${c.entries} diary entries`);
     } catch (err) {
       toast(esc(err.message || 'Could not read that file.'));
     }
@@ -103,4 +109,96 @@ document.addEventListener('installable', () => {
   if (location.hash === '' || location.hash.startsWith('#/day') || location.hash === '#/' || location.hash.startsWith('#/more')) {
     window.dispatchEvent(new Event('rerender'));
   }
+});
+
+// ---------- Cloud backup card ----------
+
+window.addEventListener('syncstatus', () => {
+  const card = document.getElementById('cloud');
+  if (card && !card.contains(document.activeElement)) renderCloud(card);
+});
+
+const TOKEN_URL = 'https://github.com/settings/tokens/new?scopes=gist&description=Macro%20Scanner%20backup';
+
+function ago(iso) {
+  if (!iso) return 'not yet';
+  const s = Math.round((Date.now() - Date.parse(iso)) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return new Date(iso).toLocaleString();
+}
+
+async function renderCloud(card) {
+  const cfg = sync.config();
+  const persisted = await sync.isPersisted();
+  if (!cfg) {
+    card.innerHTML = `
+      <h2 class="card-title">☁️ Automatic cloud backup</h2>
+      <p>Your diary is saved on this phone. Turn this on to also back it up to your free GitHub account automatically after every change, so nothing is lost if you lose or reset your phone.</p>
+      <ol class="steps">
+        <li><a href="${TOKEN_URL}" target="_blank" rel="noopener">Open this GitHub page</a> and sign in.</li>
+        <li>Under <strong>Expiration</strong> pick <strong>No expiration</strong>. Leave <strong>gist</strong> ticked.</li>
+        <li>Tap <strong>Generate token</strong> at the bottom, then copy the token (starts with <code>ghp_</code>).</li>
+        <li>Paste it here:</li>
+      </ol>
+      <form id="form-token" class="manual-code" autocomplete="off">
+        <input id="token" type="password" placeholder="ghp_…" aria-label="GitHub token" autocapitalize="off" spellcheck="false">
+        <button class="btn primary" type="submit">Connect</button>
+      </form>
+      <p class="status error" id="cloud-error"></p>
+      <p class="muted small">The token only allows access to your Gists and stays on this phone. On a new phone, do the same steps and your diary comes back.</p>`;
+    $('#form-token', card).addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      btn.disabled = true; btn.textContent = 'Connecting…';
+      try {
+        const { restored } = await sync.connect($('#token', card).value);
+        toast(restored ? 'Connected. Your diary was restored from the cloud.' : 'Connected. Backup is on.');
+        renderCloud(card);
+      } catch (err) {
+        $('#cloud-error', card).textContent = err instanceof TypeError ? 'No internet connection. Try again when you’re online.' : err.message;
+        btn.disabled = false; btn.textContent = 'Connect';
+      }
+    });
+    return;
+  }
+  const state = cfg.error === 'offline'
+    ? '⏸️ Waiting for internet. It will back up when you’re online.'
+    : cfg.error ? `⚠️ Last backup failed: ${esc(cfg.error)}`
+      : `✅ Backed up ${esc(ago(cfg.lastSync))}`;
+  card.innerHTML = `
+    <h2 class="card-title">☁️ Automatic cloud backup</h2>
+    <p>${state}</p>
+    <p class="muted small">On, to GitHub account <strong>${esc(cfg.login)}</strong>. Every change is backed up automatically.${persisted ? ' This phone is also told never to clear the app’s data.' : ''}</p>
+    <div class="actions">
+      <button class="btn" id="btn-sync">Back up now</button>
+      <button class="btn" id="btn-restore">Restore from cloud</button>
+      <button class="btn ghost danger" id="btn-disconnect">Turn off</button>
+    </div>`;
+  $('#btn-sync', card).addEventListener('click', async () => { await sync.backupNow(); renderCloud(card); });
+  $('#btn-restore', card).addEventListener('click', async () => {
+    try { await sync.restoreNow(); const c = await db.counts(); toast(`Restored: ${c.entries} diary entries`); } catch (err) { toast(err.message); }
+  });
+  $('#btn-disconnect', card).addEventListener('click', () => {
+    if (!confirm('Turn off cloud backup on this phone? Your backup stays in your GitHub account.')) return;
+    sync.disconnect();
+    renderCloud(card);
+  });
+}
+
+/** Diary hint while cloud backup is off. */
+let backupHintDismissed = (() => { try { return localStorage.getItem('backupHintDismissed') === '1'; } catch { return false; } })();
+export function backupBanner() {
+  if (sync.isConnected() || backupHintDismissed) return '';
+  return `<div class="install-banner card backup-banner">
+    <span>☁️ Your diary is only on this phone. <a href="#/more">Turn on cloud backup</a></span>
+    <button class="btn small ghost" data-backup-dismiss aria-label="Not now">✕</button>
+  </div>`;
+}
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-backup-dismiss]')) return;
+  backupHintDismissed = true;
+  try { localStorage.setItem('backupHintDismissed', '1'); } catch { /* ignore */ }
+  e.target.closest('.backup-banner')?.remove();
 });
