@@ -6,7 +6,7 @@ import {
   shortDay, dayNum, longDate, monthLabel, shortDate, dayLabel,
 } from '../dates.js';
 import { totals, fmt } from '../nutrition.js';
-import { $, $$, esc, go, macroTiles, splitBar } from '../ui.js';
+import { $, $$, esc, go, macroTiles, kcalHeader, splitBar } from '../ui.js';
 import { icon } from '../icons.js';
 
 export async function renderReports(el, period = 'week', dateParam) {
@@ -45,7 +45,8 @@ export async function renderReports(el, period = 'week', dateParam) {
     body = `
       <section class="card">
         <h2 class="card-title">Average per logged day <span class="muted small">(${logged.length} of ${days.length} days logged)</span></h2>
-        ${macroTiles(avg, { goals })}
+        ${kcalHeader(avg.kcal, goals.kcal)}
+        ${macroTiles(avg, { goals, keys: ['protein', 'carbs', 'fat'] })}
         ${splitBar(sum)}
       </section>
       <section class="card">
@@ -102,7 +103,8 @@ async function dayBody(date, entries, sum, goals) {
   return `
     <section class="card">
       <h2 class="card-title">Day total</h2>
-      ${macroTiles(sum, { goals })}
+      ${kcalHeader(sum.kcal, goals.kcal)}
+      ${macroTiles(sum, { goals, keys: ['protein', 'carbs', 'fat'] })}
       ${splitBar(sum)}
     </section>
     <section class="card">
