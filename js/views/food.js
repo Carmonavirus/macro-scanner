@@ -9,6 +9,7 @@ import {
   MACROS, hasMacros, scale, fmt, isValidGtin, isGermanCode, productFromForm, entryMacros,
 } from '../nutrition.js';
 import { $, $$, esc, go, backTo, nav, macroTiles, parseNum, toast } from '../ui.js';
+import { icon } from '../icons.js';
 
 let scanner;
 export function stopCamera() { scanner?.stop(); scanner = null; }
@@ -41,12 +42,12 @@ export async function renderAdd(el, date, mealId) {
       <video id="video" playsinline muted></video>
       <div class="reticle" aria-hidden="true"></div>
       <div class="camera-idle" id="camera-idle">
-        <button class="btn primary big" id="btn-start">📷 Scan a barcode</button>
+        <button class="btn primary big with-ic" id="btn-start">${icon('scan-barcode')} Scan a barcode</button>
         <p class="hint">Point the camera at the barcode on the pack.</p>
       </div>
       <div class="camera-controls" id="camera-controls" hidden>
-        <button class="btn round" id="btn-torch" hidden title="Flashlight">🔦</button>
-        <button class="btn round" id="btn-stop" title="Stop camera">✕</button>
+        <button class="btn round" id="btn-torch" hidden title="Flashlight" aria-label="Flashlight">${icon('flashlight')}</button>
+        <button class="btn round" id="btn-stop" title="Stop camera" aria-label="Stop camera">${icon('x')}</button>
       </div>
     </div>
     <p class="status" id="scan-status" role="status"></p>
@@ -58,9 +59,9 @@ export async function renderAdd(el, date, mealId) {
 
     <div class="row-between">
       <h2 class="section-title">Your foods</h2>
-      <button class="btn small" id="btn-custom">＋ Food without barcode</button>
+      <button class="btn small with-ic" id="btn-custom">${icon('plus')} Food without barcode</button>
     </div>
-    <input id="search" type="search" placeholder="Search foods you've used before" aria-label="Search your foods">
+    <label class="searchbox">${icon('search')}<input id="search" type="search" placeholder="Search foods you've used before" aria-label="Search your foods"></label>
     <ul class="history" id="foods"></ul>
     <p class="empty" id="foods-empty" hidden>Nothing here yet. Scan something to get started.</p>
   `;
@@ -122,7 +123,7 @@ export async function renderAdd(el, date, mealId) {
     const list = (q ? foods.filter((p) => `${p.name} ${p.brand}`.toLowerCase().includes(q)) : foods).slice(0, 40);
     $('#foods-empty', el).hidden = list.length > 0;
     $('#foods', el).innerHTML = list.map((p) => `<li><a href="#/p/${esc(p.code)}?${t.qs}">
-      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" loading="lazy">` : '<span class="thumb">🥫</span>'}
+      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" loading="lazy">` : `<span class="thumb">${icon('utensils')}</span>`}
       <span class="info"><strong>${esc(p.name)}</strong><span class="small muted">${hasMacros(p)
         ? `${fmt(p.per100.kcal, 'kcal')} kcal /100 ${esc(p.unit)}${p.brand ? ' · ' + esc(p.brand) : ''}`
         : 'no macros yet'}</span></span></a></li>`).join('');
@@ -180,11 +181,11 @@ export async function renderProduct(el, code, query) {
 
   el.innerHTML = `
     <div class="product-head">
-      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" class="product-img">` : '<div class="product-img placeholder">🥫</div>'}
+      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" class="product-img">` : `<div class="product-img placeholder">${icon('package')}</div>`}
       <div>
         <h2>${esc(p.name)}</h2>
         <p class="muted">${esc([p.brand, p.quantity].filter(Boolean).join(' · '))}</p>
-        <p class="muted small">${isCustom ? '' : esc(code)} ${isGermanCode(code) ? '<span class="badge">🇩🇪 DE</span>' : ''}
+        <p class="muted small">${isCustom ? '' : esc(code)} ${isGermanCode(code) ? '<span class="badge">DE</span>' : ''}
           ${p.source === 'manual' ? '<span class="badge">entered by you</span>' : ''}</p>
       </div>
     </div>
@@ -319,7 +320,7 @@ export async function renderEntry(el, id) {
     <div id="tiles"></div>
     <div class="actions">
       <button class="btn primary" id="btn-save">Save</button>
-      <button class="btn danger" id="btn-delete">Remove</button>
+      <button class="btn danger with-ic" id="btn-delete">${icon('trash-2')} Remove</button>
     </div>
   `;
   const render = () => { $('#tiles', el).innerHTML = macroTiles(entryMacros({ ...entry, grams: parseNum($('#grams', el).value) || 0 })); };

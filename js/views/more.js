@@ -4,6 +4,7 @@ import * as db from '../db.js';
 import { $, esc, toast } from '../ui.js';
 import { today } from '../dates.js';
 import * as sync from '../sync.js';
+import { icon } from '../icons.js';
 
 // ---------- Install (Add to Home screen) ----------
 let deferredPrompt = null;
@@ -26,9 +27,9 @@ let bannerDismissed = (() => { try { return localStorage.getItem('installDismiss
 export function installBanner() {
   if (isInstalled() || !deferredPrompt || bannerDismissed) return '';
   return `<div class="install-banner card">
-    <span>📲 Put Macro Scanner on your home screen</span>
+    <span class="with-ic">${icon('smartphone')} Put Macro Scanner on your home screen</span>
     <span class="row"><button class="btn primary small" data-install>Install</button>
-    <button class="btn small ghost" data-install-dismiss aria-label="Not now">✕</button></span>
+    <button class="btn small ghost icon" data-install-dismiss aria-label="Not now">${icon('x')}</button></span>
   </div>`;
 }
 
@@ -51,14 +52,20 @@ export function renderMore(el) {
     <section class="card">
       <h2 class="card-title">Home screen</h2>
       ${isInstalled()
-        ? '<p>✅ You’re using the installed app.</p>'
+        ? `<p class="with-ic">${icon('circle-check', { cls: 'ok' })} You’re using the installed app.</p>`
         : `<p>Install Macro Scanner so it opens from your home screen like a normal app, full screen and offline.</p>
-           ${deferredPrompt ? '<button class="btn primary" data-install>📲 Install app</button>' : `
+           ${deferredPrompt ? `<button class="btn primary with-ic" data-install>${icon('smartphone')} Install app</button>` : `
            <ol class="steps">
              <li>Open this page in <strong>Chrome</strong> on your phone.</li>
              <li>Tap the <strong>⋮</strong> menu in the top right.</li>
              <li>Tap <strong>Install app</strong> (on some phones: <strong>Add to Home screen</strong>), then confirm.</li>
            </ol>`}`}
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Daily goals</h2>
+      <p class="muted">Calories, protein, carbs and fat to aim for each day.</p>
+      <a class="btn" href="#/goals">Set daily goals</a>
     </section>
 
     <section class="card" id="cloud"></section>
@@ -67,8 +74,8 @@ export function renderMore(el) {
       <h2 class="card-title">Backup file</h2>
       <p class="muted">Save a copy of everything as a file, or restore one. Handy if you ever stop using cloud backup.</p>
       <div class="actions">
-        <button class="btn" id="btn-export">⬇️ Save backup file</button>
-        <label class="btn">⬆️ Restore from file<input type="file" id="file-import" accept="application/json,.json" hidden></label>
+        <button class="btn with-ic" id="btn-export">${icon('download')} Save backup file</button>
+        <label class="btn with-ic">${icon('upload')} Restore from file<input type="file" id="file-import" accept="application/json,.json" hidden></label>
       </div>
     </section>
 
@@ -134,7 +141,7 @@ async function renderCloud(card) {
   const persisted = await sync.isPersisted();
   if (!cfg) {
     card.innerHTML = `
-      <h2 class="card-title">☁️ Automatic cloud backup</h2>
+      <h2 class="card-title with-ic">${icon('cloud-upload')} Automatic cloud backup</h2>
       <p>Your diary is saved on this phone. Turn this on to also back it up to your free GitHub account automatically after every change, so nothing is lost if you lose or reset your phone.</p>
       <ol class="steps">
         <li><a href="${TOKEN_URL}" target="_blank" rel="noopener">Open this GitHub page</a> and sign in.</li>
@@ -164,12 +171,12 @@ async function renderCloud(card) {
     return;
   }
   const state = cfg.error === 'offline'
-    ? '⏸️ Waiting for internet. It will back up when you’re online.'
-    : cfg.error ? `⚠️ Last backup failed: ${esc(cfg.error)}`
-      : `✅ Backed up ${esc(ago(cfg.lastSync))}`;
+    ? `${icon('wifi-off')} Waiting for internet. It will back up when you’re online.`
+    : cfg.error ? `${icon('triangle-alert', { cls: 'warn' })} Last backup failed: ${esc(cfg.error)}`
+      : `${icon('circle-check', { cls: 'ok' })} Backed up ${esc(ago(cfg.lastSync))}`;
   card.innerHTML = `
-    <h2 class="card-title">☁️ Automatic cloud backup</h2>
-    <p>${state}</p>
+    <h2 class="card-title with-ic">${icon('cloud-upload')} Automatic cloud backup</h2>
+    <p class="with-ic">${state}</p>
     <p class="muted small">On, to GitHub account <strong>${esc(cfg.login)}</strong>. Every change is backed up automatically.${persisted ? ' This phone is also told never to clear the app’s data.' : ''}</p>
     <div class="actions">
       <button class="btn" id="btn-sync">Back up now</button>
@@ -192,8 +199,8 @@ let backupHintDismissed = (() => { try { return localStorage.getItem('backupHint
 export function backupBanner() {
   if (sync.isConnected() || backupHintDismissed) return '';
   return `<div class="install-banner card backup-banner">
-    <span>☁️ Your diary is only on this phone. <a href="#/more">Turn on cloud backup</a></span>
-    <button class="btn small ghost" data-backup-dismiss aria-label="Not now">✕</button>
+    <span class="with-ic">${icon('cloud-upload')} <span>Your diary is only on this phone. <a href="#/more">Turn on cloud backup</a></span></span>
+    <button class="btn small ghost icon" data-backup-dismiss aria-label="Not now">${icon('x')}</button>
   </div>`;
 }
 document.addEventListener('click', (e) => {
