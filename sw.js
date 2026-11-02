@@ -1,10 +1,10 @@
 // Service worker: caches the app itself so it opens offline and loads instantly.
 // Product data is cached separately in IndexedDB by the app. Bump VERSION on every release.
-const VERSION = 'v17';
+const VERSION = 'v18';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/scanner.js', 'js/off.js', 'js/db.js', 'js/nutrition.js', 'js/ui.js', 'js/dates.js', 'js/sync.js', 'js/icons.js',
-  'js/views/diary.js', 'js/views/food.js', 'js/views/reports.js', 'js/views/more.js', 'js/views/goals.js', 'js/views/supplements.js', 'js/views/colours.js', 'js/theme.js', 'js/swipe.js', 'js/hevy.js', 'js/generic.js', 'js/views/hevy.js',
+  'js/views/diary.js', 'js/views/food.js', 'js/views/reports.js', 'js/views/more.js', 'js/views/goals.js', 'js/views/supplements.js', 'js/views/colours.js', 'js/theme.js', 'js/swipe.js', 'js/hevy.js', 'js/generic.js', 'js/views/hevy.js', 'js/views/shopping.js',
   'vendor/barcode-detector-ponyfill.js', 'vendor/zxing_reader.wasm',
   'icons/icon-192.png', 'icons/icon-512.png',
 ];
