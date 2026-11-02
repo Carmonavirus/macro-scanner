@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="Scan food barcodes and see their macros.">
+  <title>Macro Scanner</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Macro Scanner</h1>
+  </header>
+
+  <main>
+    <!-- Scan view -->
+    <section id="view-scan" class="view">
+      <div class="camera" id="camera">
+        <video id="video" playsinline muted></video>
+        <div class="reticle" aria-hidden="true"></div>
+        <div class="camera-idle" id="camera-idle">
+          <button class="btn primary big" id="btn-start">📷 Scan a barcode</button>
+          <p class="hint">Point the camera at the barcode on the pack.</p>
+        </div>
+        <div class="camera-controls" id="camera-controls" hidden>
+          <button class="btn round" id="btn-torch" hidden title="Flashlight">🔦</button>
+          <button class="btn round" id="btn-stop" title="Stop camera">✕</button>
+        </div>
+      </div>
+      <p class="status" id="scan-status" role="status"></p>
+
+      <form class="manual-code" id="form-code" autocomplete="off">
+        <input id="input-code" inputmode="numeric" pattern="[0-9]*" placeholder="…or type the barcode number" aria-label="Barcode number">
+        <button class="btn" type="submit">Look up</button>
+      </form>
+
+      <h2 class="section-title">Recent scans</h2>
+      <ul class="history" id="history"></ul>
+      <p class="empty" id="history-empty">Nothing scanned yet.</p>
+    </section>
+
+    <!-- Product view -->
+    <section id="view-product" class="view" hidden>
+      <button class="btn link" data-back>← Back</button>
+      <div id="product"></div>
+    </section>
+
+    <!-- Manual entry view -->
+    <section id="view-edit" class="view" hidden>
+      <button class="btn link" data-back>← Back</button>
+      <h2>Enter nutrition values</h2>
+      <p class="hint" id="edit-reason"></p>
+      <form id="form-edit" class="edit-form" autocomplete="off">
+        <label>Barcode<input name="code" inputmode="numeric" readonly></label>
+        <label>Name<input name="name" required placeholder="e.g. Haferflocken"></label>
+        <label>Brand<input name="brand" placeholder="optional"></label>
+        <fieldset>
+          <legend>Per 100 g / 100 ml (from the label)</legend>
+          <div class="grid2">
+            <label>Energy (kcal)<input name="kcal" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" required></label>
+            <label>Protein (g)<input name="protein" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" required></label>
+            <label>Carbs (g)<input name="carbs" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" required></label>
+            <label>Fat (g)<input name="fat" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" required></label>
+            <label>of which sugars (g)<input name="sugars" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"></label>
+            <label>of which saturated (g)<input name="saturatedFat" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"></label>
+            <label>Fibre (g)<input name="fiber" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"></label>
+            <label>Salt (g)<input name="salt" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"></label>
+          </div>
+        </fieldset>
+        <label>Serving size in g (optional)<input name="servingGrams" type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"></label>
+        <p class="hint">Tip: German labels list “Brennwert” in kJ and kcal. Use the kcal number.</p>
+        <button class="btn primary" type="submit">Save</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Product data © <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener">Open Food Facts</a> contributors (ODbL). Everything you save stays on this phone.
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
