@@ -6,7 +6,7 @@ import { fetchProduct } from '../off.js';
 import * as db from '../db.js';
 import { today, isValidKey, dayLabel } from '../dates.js';
 import {
-  MACROS, hasMacros, scale, fmt, isValidGtin, isGermanCode, productFromForm, entryMacros, totals, tintClass,
+  MACROS, hasMacros, scale, fmt, isValidGtin, isGermanCode, productFromForm, entryMacros, totals, tintAttrs,
 } from '../nutrition.js';
 import { $, $$, esc, go, backTo, nav, macroTiles, parseNum, toast, amountSlider, bindAmountSlider } from '../ui.js';
 import { icon } from '../icons.js';
@@ -169,10 +169,10 @@ export async function renderAdd(el, date, mealId) {
     $('#foods-empty', el).hidden = list.length > 0 || basics.length > 0;
     $('#basics-hint', el).hidden = !!q;
     $('#basics', el).hidden = !basics.length;
-    $('#basics-list', el).innerHTML = basics.map((g) => `<li><a class="${tintClass(g.per100).trim()}" href="#/p/${esc(g.code)}?${t.qs}">
+    $('#basics-list', el).innerHTML = basics.map((g) => `<li><a ${tintAttrs(g.per100)} href="#/p/${esc(g.code)}?${t.qs}">
       <span class="thumb emoji" aria-hidden="true">${g.emoji}</span>
       <span class="info"><strong>${esc(g.name)}</strong><span class="small muted">${fmt(g.per100.kcal, 'kcal')} kcal /100 g · P ${fmt(g.per100.protein)} · C ${fmt(g.per100.carbs)} · F ${fmt(g.per100.fat)}</span></span></a></li>`).join('');
-    $('#foods', el).innerHTML = list.map((p) => `<li><a class="${hasMacros(p) ? tintClass(p.per100).trim() : ''}" href="#/p/${esc(p.code)}?${t.qs}">
+    $('#foods', el).innerHTML = list.map((p) => `<li><a ${hasMacros(p) ? tintAttrs(p.per100) : ''} href="#/p/${esc(p.code)}?${t.qs}">
       ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" loading="lazy">` : emojiFor(p.code) ? `<span class="thumb emoji" aria-hidden="true">${emojiFor(p.code)}</span>` : `<span class="thumb">${icon('utensils')}</span>`}
       <span class="info"><strong>${esc(p.name)}</strong><span class="small muted">${hasMacros(p)
         ? `${fmt(p.per100.kcal, 'kcal')} kcal /100 ${esc(p.unit)}${p.brand ? ' · ' + esc(p.brand) : ''}`

@@ -102,16 +102,24 @@ export function energySplit(t) {
 }
 
 /**
- * The macro that gives most of a food's calories, when it clearly dominates
- * (at least 45 % of the calories from protein, carbs and fat). null otherwise.
+ * Share of calories from protein, carbs and fat (0–100 each, adding up to 100),
+ * or null when there are no macros.
  */
-export function mainMacro(per100) {
+export function macroShares(per100) {
   const p = (per100?.protein || 0) * 4, c = (per100?.carbs || 0) * 4, f = (per100?.fat || 0) * 9;
   const sum = p + c + f;
   if (!(sum > 0)) return null;
-  const [key, val] = [['protein', p], ['carbs', c], ['fat', f]].sort((a, b) => b[1] - a[1])[0];
-  return val / sum >= 0.45 ? key : null;
+  return { protein: (p / sum) * 100, carbs: (c / sum) * 100, fat: (f / sum) * 100 };
 }
 
-/** CSS class that tints a food row in its main macro's colour ('' when none). */
-export const tintClass = (per100) => { const k = mainMacro(per100); return k ? ` mx-${k}` : ''; };
+/**
+ * Attributes that give a food row a background split into its macro colours,
+ * sized by each macro's share of the calories. Use inside an opening tag.
+ */
+export function tintAttrs(per100, cls = '') {
+  const s = macroShares(per100);
+  const c = `${cls} mx`.trim();
+  if (!s) return cls ? `class="${cls}"` : '';
+  const a = s.protein.toFixed(1), b = (s.protein + s.carbs).toFixed(1);
+  return `class="${c}" style="--a:${a}%;--b:${b}%"`;
+}
