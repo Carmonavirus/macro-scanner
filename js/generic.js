@@ -81,6 +81,7 @@ const ROWS = [
   ['quinoa', 'Quinoa, roh', 'Quinoa, uncooked', 368, 14.1, 64.2, 6.1, 7.0, 0, 60, '1 portion', 'u'],
   ['quinoa-gekocht', 'Quinoa, gekocht', 'Quinoa, cooked', 120, 4.4, 21.3, 1.9, 2.8, 0.9, 185, '1 portion', 'u'],
   ['couscous', 'Couscous, roh', 'Couscous, uncooked', 376, 12.8, 77.4, 0.6, 5.0, 0, 60, '1 portion', 'u'],
+  ['wrap', 'Weizen-Tortilla (Wrap)', 'Wheat tortilla wrap', 300, 8.0, 50.0, 7.0, 2.5, 3.0, 62, '1 wrap', 'd', 'tortilla wraps'],
   ['vollkornbrot', 'Vollkornbrot', 'Wholegrain rye bread', 200, 7.0, 38.0, 1.2, 8.0, 3.0, 50, '1 slice', 'd', 'brot roggenbrot'],
   ['mischbrot', 'Mischbrot', 'Mixed rye-wheat bread', 214, 6.5, 41.0, 1.1, 5.0, 2.0, 50, '1 slice', 'd', 'brot'],
   ['broetchen', 'Brötchen', 'Bread roll', 270, 9.0, 54.0, 1.5, 3.0, 3.0, 60, '1 roll', 'd', 'semmel weizenbrötchen broetchen'],
@@ -91,6 +92,10 @@ const ROWS = [
   ['vollmilch', 'Vollmilch 3,5 %', 'Whole milk 3.5%', 64, 3.3, 4.8, 3.5, 0, 4.8, 200, '1 glass (200 ml)', 'd', 'milch'],
   ['milch-15', 'Fettarme Milch 1,5 %', 'Low-fat milk 1.5%', 47, 3.4, 4.9, 1.5, 0, 4.9, 200, '1 glass (200 ml)', 'd', 'milch'],
   ['magerquark', 'Magerquark', 'Low-fat quark', 67, 12.0, 4.0, 0.2, 0, 4.0, 250, '1 tub', 'd', 'quark'],
+  ['skyr', 'Skyr natur', 'Skyr, plain', 63, 11.0, 4.0, 0.2, 0, 4.0, 150, '1 portion', 'd', 'joghurt quark isländisch'],
+  ['huettenkaese', 'Hüttenkäse', 'Cottage cheese', 96, 12.3, 1.5, 4.5, 0, 1.5, 200, '1 tub', 'd', 'körniger frischkäse koerniger kaese käse cottage'],
+  ['eiklar', 'Eiklar', 'Egg white', 48, 11.0, 0.7, 0.2, 0, 0.7, 33, '1 egg white', 'd', 'eiweiß eiweiss ei'],
+  ['feta', 'Feta', 'Feta', 264, 14.2, 4.1, 21.3, 0, 4.1, 50, '1 portion', 'u', 'käse kaese schafskäse hirtenkäse'],
   ['naturjoghurt', 'Naturjoghurt 3,5 %', 'Plain yoghurt 3.5%', 64, 3.5, 4.5, 3.5, 0, 4.5, 150, '1 pot', 'd', 'joghurt yogurt'],
   ['butter', 'Butter', 'Butter', 741, 0.7, 0.6, 82.0, 0, 0.6, 10, '1 portion', 'd'],
   ['gouda', 'Gouda', 'Gouda', 356, 24.9, 2.2, 27.4, 0, 2.2, 30, '1 slice', 'u', 'käse kaese'],
@@ -105,6 +110,8 @@ const ROWS = [
   ['rindfleisch', 'Rindfleisch, mager, roh', 'Lean beef, raw', 121, 22.0, 0, 3.5, 0, 0, 200, '1 steak', 'd', 'steak rind hüfte'],
   ['lachs', 'Lachs, roh', 'Salmon, raw', 208, 20.4, 0, 13.4, 0, 0, 125, '1 fillet', 'u', 'salmon fisch'],
   ['thunfisch', 'Thunfisch im eigenen Saft', 'Tuna in water, drained', 116, 25.5, 0, 0.8, 0, 0, 130, '1 can, drained', 'u', 'tuna fisch'],
+  ['garnelen', 'Garnelen, roh', 'Shrimp, raw', 85, 20.1, 0, 0.5, 0, 0, 150, '1 portion', 'u', 'shrimps krabben prawns'],
+  ['proteinpulver', 'Proteinpulver (Whey)', 'Whey protein powder', 380, 75.0, 8.0, 5.0, 0, 6.0, 30, '1 scoop', 'd', 'whey eiweißpulver eiweisspulver shake'],
   ['tofu', 'Tofu natur', 'Tofu, firm', 144, 17.3, 2.8, 8.7, 2.3, 0.6, 100, '1 portion', 'u'],
 
   // Legumes, nuts, seeds
@@ -121,6 +128,7 @@ const ROWS = [
   ['leinsamen', 'Leinsamen', 'Flaxseed', 534, 18.3, 28.9, 42.2, 27.3, 1.6, 10, '1 Tbsp', 'u', 'leinsamen'],
 
   // Oils, sweet things
+  ['passierte-tomaten', 'Passierte Tomaten', 'Passata', 25, 1.4, 4.0, 0.2, 1.0, 4.0, 200, '1/2 pack', 'd', 'tomatensoße tomatensosse passata'],
   ['olivenoel', 'Olivenöl', 'Olive oil', 884, 0, 0, 100, 0, 0, 13, '1 Tbsp', 'u', 'öl oel oil olivenoel'],
   ['rapsoel', 'Rapsöl', 'Rapeseed oil', 884, 0, 0, 100, 0, 0, 13, '1 Tbsp', 'u', 'öl oel oil rapsoel'],
   ['honig', 'Honig', 'Honey', 304, 0.3, 82.4, 0, 0.2, 82.1, 8, '1 tsp', 'u'],
@@ -134,7 +142,7 @@ const fold = (s) => String(s).toLowerCase()
   .normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 // Picture for each food: the phone's own emoji (no download, no licence needed).
-const EMOJI = {"apfel": "🍎", "banane": "🍌", "orange": "🍊", "mandarine": "🍊", "birne": "🍐", "erdbeeren": "🍓", "heidelbeeren": "🫐", "himbeeren": "🍓", "trauben": "🍇", "kiwi": "🥝", "ananas": "🍍", "mango": "🥭", "wassermelone": "🍉", "honigmelone": "🍈", "pfirsich": "🍑", "nektarine": "🍑", "pflaume": "🍑", "kirschen": "🍒", "aprikose": "🍑", "zitrone": "🍋", "grapefruit": "🍊", "avocado": "🥑", "granatapfel": "🍎", "datteln": "🌴", "rosinen": "🍇", "tomate": "🍅", "cherrytomaten": "🍅", "gurke": "🥒", "paprika-rot": "🫑", "paprika-gruen": "🫑", "karotte": "🥕", "brokkoli": "🥦", "blumenkohl": "🥦", "zucchini": "🥒", "aubergine": "🍆", "spinat": "🥬", "kopfsalat": "🥬", "eisbergsalat": "🥬", "rucola": "🥬", "zwiebel": "🧅", "knoblauch": "🧄", "kartoffel": "🥔", "kartoffel-gekocht": "🥔", "suesskartoffel": "🍠", "champignons": "🍄", "erbsen": "🫛", "gruene-bohnen": "🫛", "mais": "🌽", "kohlrabi": "🥬", "weisskohl": "🥬", "rotkohl": "🥬", "spargel": "🥬", "lauch": "🧅", "sellerie": "🥬", "radieschen": "🌱", "kuerbis": "🎃", "rosenkohl": "🥬", "gruenkohl": "🥬", "reis": "🍚", "reis-gekocht": "🍚", "vollkornreis": "🍚", "vollkornreis-gekocht": "🍚", "nudeln": "🍝", "nudeln-gekocht": "🍝", "haferflocken": "🥣", "quinoa": "🌾", "quinoa-gekocht": "🌾", "couscous": "🌾", "vollkornbrot": "🍞", "mischbrot": "🍞", "broetchen": "🥖", "toast": "🍞", "ei": "🥚", "vollmilch": "🥛", "milch-15": "🥛", "magerquark": "🥣", "naturjoghurt": "🥣", "butter": "🧈", "gouda": "🧀", "mozzarella": "🧀", "haehnchenbrust": "🍗", "haehnchenbrust-gebraten": "🍗", "putenbrust": "🍗", "rinderhack": "🥩", "rinderhack-mager": "🥩", "rindfleisch": "🥩", "lachs": "🐟", "thunfisch": "🐟", "tofu": "🧊", "linsen": "🫘", "linsen-gekocht": "🫘", "kichererbsen": "🫘", "kidneybohnen": "🫘", "mandeln": "🌰", "walnuesse": "🌰", "erdnuesse": "🥜", "cashews": "🥜", "erdnussbutter": "🥜", "chiasamen": "🌱", "leinsamen": "🌱", "olivenoel": "🫒", "rapsoel": "🌻", "honig": "🍯", "zucker": "🍬", "zartbitterschokolade": "🍫"};
+const EMOJI = {"apfel": "🍎", "banane": "🍌", "orange": "🍊", "mandarine": "🍊", "birne": "🍐", "erdbeeren": "🍓", "heidelbeeren": "🫐", "himbeeren": "🍓", "trauben": "🍇", "kiwi": "🥝", "ananas": "🍍", "mango": "🥭", "wassermelone": "🍉", "honigmelone": "🍈", "pfirsich": "🍑", "nektarine": "🍑", "pflaume": "🍑", "kirschen": "🍒", "aprikose": "🍑", "zitrone": "🍋", "grapefruit": "🍊", "avocado": "🥑", "granatapfel": "🍎", "datteln": "🌴", "rosinen": "🍇", "tomate": "🍅", "cherrytomaten": "🍅", "gurke": "🥒", "paprika-rot": "🫑", "paprika-gruen": "🫑", "karotte": "🥕", "brokkoli": "🥦", "blumenkohl": "🥦", "zucchini": "🥒", "aubergine": "🍆", "spinat": "🥬", "kopfsalat": "🥬", "eisbergsalat": "🥬", "rucola": "🥬", "zwiebel": "🧅", "knoblauch": "🧄", "kartoffel": "🥔", "kartoffel-gekocht": "🥔", "suesskartoffel": "🍠", "champignons": "🍄", "erbsen": "🫛", "gruene-bohnen": "🫛", "mais": "🌽", "kohlrabi": "🥬", "weisskohl": "🥬", "rotkohl": "🥬", "spargel": "🥬", "lauch": "🧅", "sellerie": "🥬", "radieschen": "🌱", "kuerbis": "🎃", "rosenkohl": "🥬", "gruenkohl": "🥬", "reis": "🍚", "reis-gekocht": "🍚", "vollkornreis": "🍚", "vollkornreis-gekocht": "🍚", "nudeln": "🍝", "nudeln-gekocht": "🍝", "haferflocken": "🥣", "quinoa": "🌾", "quinoa-gekocht": "🌾", "couscous": "🌾", "vollkornbrot": "🍞", "mischbrot": "🍞", "broetchen": "🥖", "toast": "🍞", "ei": "🥚", "vollmilch": "🥛", "milch-15": "🥛", "magerquark": "🥣", "naturjoghurt": "🥣", "butter": "🧈", "gouda": "🧀", "mozzarella": "🧀", "haehnchenbrust": "🍗", "haehnchenbrust-gebraten": "🍗", "putenbrust": "🍗", "rinderhack": "🥩", "rinderhack-mager": "🥩", "rindfleisch": "🥩", "lachs": "🐟", "thunfisch": "🐟", "tofu": "🧊", "linsen": "🫘", "linsen-gekocht": "🫘", "kichererbsen": "🫘", "kidneybohnen": "🫘", "mandeln": "🌰", "walnuesse": "🌰", "erdnuesse": "🥜", "cashews": "🥜", "erdnussbutter": "🥜", "chiasamen": "🌱", "leinsamen": "🌱", "olivenoel": "🫒", "rapsoel": "🌻", "honig": "🍯", "zucker": "🍬", "zartbitterschokolade": "🍫", "skyr": "🥣", "huettenkaese": "🧀", "eiklar": "🥚", "feta": "🧀", "garnelen": "🦐", "proteinpulver": "🥤", "wrap": "🌯", "passierte-tomaten": "🍅"};
 
 export const PREFIX = 'gen-';
 

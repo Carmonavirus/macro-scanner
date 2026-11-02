@@ -29,6 +29,35 @@ function buildItems(saved, counts, existing = []) {
   return [...map.values()];
 }
 
+/**
+ * Add foods to the shopping list from somewhere else (e.g. a recipe).
+ * items: [{ code, name, grams, unit }] or [{ name, note }] for things without an amount.
+ * Returns how many lines the list has afterwards.
+ */
+export async function addToShoppingList(items, fromName) {
+  const cur = (await getList()) || { items: [], from: [], createdAt: new Date().toISOString() };
+  const map = new Map(cur.items.map((i) => [i.key, i]));
+  for (const it of items) {
+    if (!it.grams) {
+      const label = it.note ? `${it.name} (${it.note})` : it.name;
+      const key = `x-${label.toLowerCase()}`;
+      if (!map.has(key)) map.set(key, { key, code: null, name: label, grams: 0, unit: '', checked: false, extra: true });
+      else map.get(key).checked = false;
+      continue;
+    }
+    const key = it.code || it.name.toLowerCase();
+    const old = map.get(key);
+    if (old) { old.grams += it.grams; old.checked = false; }
+    else map.set(key, { key, code: it.code || null, name: it.name, grams: it.grams, unit: it.unit || 'g', checked: false });
+  }
+  const from = [...cur.from];
+  const same = from.find((f) => f.name === fromName);
+  if (same) same.times += 1; else from.push({ name: fromName, times: 1 });
+  const next = { ...cur, items: [...map.values()], from };
+  await setList(next);
+  return next.items.length;
+}
+
 export async function renderShopping(el) {
   const [list, saved] = await Promise.all([getList(), db.getSavedMeals()]);
   if (list?.items?.length) return renderList(el, list, saved);
