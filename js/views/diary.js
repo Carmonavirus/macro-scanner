@@ -3,7 +3,8 @@
 import * as db from '../db.js';
 import { today, addDays, dayLabel, isValidKey } from '../dates.js';
 import { totals, entryMacros, fmt } from '../nutrition.js';
-import { $, $$, esc, go, macroTiles, kcalHeader, splitBar, pmf, toast } from '../ui.js';
+import { $, $$, esc, go, macroTiles, kcalHeader, splitBar, pmf, toast, actionSheet } from '../ui.js';
+import { enableSwipe, collapse } from '../swipe.js';
 import { installBanner, backupBanner } from './more.js';
 import { supplementsCard, bindSupplements } from './supplements.js';
 import { icon } from '../icons.js';
@@ -55,7 +56,7 @@ export async function renderDiary(el, dateParam) {
         </div>
         ${items.length ? `<ul class="entries">${items.map((e) => {
           const v = entryMacros(e);
-          return `<li><a href="#/entry/${e.id}">
+          return `<li class="swipe" data-entry="${e.id}"><button type="button" class="swipe-del" tabindex="-1" aria-hidden="true">${icon('trash-2')}<span>Delete</span></button><a class="swipe-row" draggable="false" href="#/entry/${e.id}">
             <span class="info"><strong>${esc(e.name)}</strong><span class="muted small">${fmt(e.grams)} ${esc(e.unit || 'g')}${e.brand ? ' · ' + esc(e.brand) : ''}</span></span>
             <span class="kcal">${fmt(v.kcal, 'kcal')}<small> kcal</small></span></a></li>`;
         }).join('')}</ul>` : ''}
@@ -83,22 +84,44 @@ export async function renderDiary(el, dateParam) {
     renderDiary(el, date);
   });
 
+  enableSwipe(el, async (li) => {
+    const entry = entries.find((e) => String(e.id) === li.dataset.entry);
+    if (!entry) return;
+    await collapse(li);
+    await db.deleteEntry(entry.id);
+    renderDiary(el, date);
+    toast(`Deleted ${entry.name}`, {
+      action: 'Undo',
+      onAction: async () => { await db.putEntry(entry); if (location.hash === '' || location.hash.startsWith('#/day') || location.hash === '#/') renderDiary(el, date); },
+    });
+  });
+
   $$('[data-meal-menu]', el).forEach((b) => b.addEventListener('click', async () => {
     const meal = meals.find((m) => m.id === b.dataset.mealMenu);
-    const count = entries.filter((e) => e.meal === meal.id).length;
-    const choice = prompt(
-      `${meal.name}\n\nType a new name to rename it${count ? '' : ', or type "delete" to remove this meal'}.`,
-      meal.name,
-    );
-    if (choice == null) return;
-    const v = choice.trim();
-    if (!v) return;
-    if (v.toLowerCase() === 'delete') {
-      if (count) return toast('Remove the food in this meal first.');
-      await db.setMealsForDate(date, meals.filter((m) => m.id !== meal.id));
-    } else {
+    const items = entries.filter((e) => e.meal === meal.id);
+    const choice = await actionSheet(meal.name, [
+      { value: 'rename', label: 'Rename', icon: 'pencil' },
+      { value: 'delete', label: 'Delete meal', icon: 'trash-2', danger: true },
+    ], icon);
+    if (choice === 'rename') {
+      const v = prompt('New name for this meal', meal.name)?.trim();
+      if (!v) return;
       await db.setMealsForDate(date, meals.map((m) => (m.id === meal.id ? { ...m, name: v.slice(0, 40) } : m)));
+      renderDiary(el, date);
+    } else if (choice === 'delete') {
+      const n = items.length;
+      if (n && !confirm(`Delete ${meal.name} and the ${n} item${n === 1 ? '' : 's'} in it?`)) return;
+      for (const it of items) await db.deleteEntry(it.id);
+      await db.setMealsForDate(date, meals.filter((m) => m.id !== meal.id));
+      renderDiary(el, date);
+      toast(`Deleted ${meal.name}`, {
+        action: 'Undo',
+        onAction: async () => {
+          for (const it of items) await db.putEntry(it);
+          await db.setMealsForDate(date, meals);
+          renderDiary(el, date);
+        },
+      });
     }
-    renderDiary(el, date);
   }));
 }

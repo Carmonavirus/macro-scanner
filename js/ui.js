@@ -100,7 +100,8 @@ export function pmf(t) {
 }
 
 let toastTimer;
-export function toast(msg) {
+/** Short message at the bottom. Optional action button, e.g. { action: 'Undo', onAction }. */
+export function toast(msg, { action, onAction, ms } = {}) {
   let el = $('#toast');
   if (!el) {
     el = document.createElement('div');
@@ -109,9 +110,40 @@ export function toast(msg) {
     document.body.appendChild(el);
   }
   el.textContent = msg;
+  el.classList.toggle('has-action', !!action);
+  if (action) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = action;
+    b.addEventListener('click', () => { el.classList.remove('show'); clearTimeout(toastTimer); onAction?.(); }, { once: true });
+    el.appendChild(b);
+  }
   el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+  toastTimer = setTimeout(() => el.classList.remove('show'), ms || (action ? 5000 : 2200));
+}
+
+/**
+ * Small menu that slides up from the bottom. items: [{ value, label, icon?, danger? }].
+ * Resolves with the chosen value, or null when dismissed.
+ */
+export function actionSheet(title, items, iconFn) {
+  return new Promise((resolve) => {
+    const dlg = document.createElement('dialog');
+    dlg.className = 'sheet';
+    dlg.innerHTML = `
+      <p class="sheet-title">${esc(title)}</p>
+      ${items.map((it) => `<button type="button" class="sheet-item${it.danger ? ' danger' : ''}" data-v="${esc(it.value)}">${it.icon && iconFn ? iconFn(it.icon) : ''}<span>${esc(it.label)}</span></button>`).join('')}
+      <button type="button" class="sheet-item cancel" data-v="">Cancel</button>`;
+    let result = null;
+    dlg.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-v]');
+      if (b) { result = b.dataset.v || null; dlg.close(); } else if (e.target === dlg) dlg.close();
+    });
+    dlg.addEventListener('close', () => { dlg.remove(); resolve(result); });
+    document.body.appendChild(dlg);
+    dlg.showModal();
+  });
 }
 
 /** Shared navigation state: history depth of the diary we came from. */
