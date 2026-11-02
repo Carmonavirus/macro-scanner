@@ -58,7 +58,7 @@ export async function renderDiary(el, dateParam) {
         ${items.length ? `<ul class="entries">${items.map((e) => {
           const v = entryMacros(e);
           return `<li class="swipe" data-entry="${e.id}"><button type="button" class="swipe-del" tabindex="-1" aria-hidden="true">${icon('trash-2')}<span>Delete</span></button><a class="swipe-row" draggable="false" href="#/entry/${e.id}">
-            <span class="info"><strong>${esc(e.name)}</strong><span class="muted small">${fmt(e.grams)} ${esc(e.unit || 'g')}${e.brand ? ' · ' + esc(e.brand) : ''}</span></span>
+            <span class="info"><strong>${esc(e.name)}</strong><span class="muted small item-macros">${fmt(e.grams)} ${esc(e.unit || 'g')} · ${pmf(v)}</span></span>
             <span class="kcal">${fmt(v.kcal, 'kcal')}<small> kcal</small></span></a></li>`;
         }).join('')}</ul>` : ''}
         ${meal.id === '_other' ? '' : `<button class="btn add" data-add="${esc(meal.id)}">${icon('plus')} Add food</button>`}
