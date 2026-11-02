@@ -14,7 +14,7 @@ const FIELDS = [
 export async function renderGoals(el) {
   const goals = await db.getGoals();
   el.innerHTML = `
-    <p class="hint">Set what you aim for each day. In the diary, a value turns light green once you reach it. Leave a field empty to skip that goal.</p>
+    <p class="hint">Set what you aim for each day. In the diary, a value gets highlighted once you reach it. Leave a field empty to skip that goal.</p>
     <form id="form-goals" class="edit-form" autocomplete="off">
       <div class="grid2">
         ${FIELDS.map((f) => `<label>${f.label} (${f.unit})
