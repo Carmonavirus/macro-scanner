@@ -51,13 +51,14 @@ h1, h2 { margin: 0; line-height: 1.2; }
 h2 { font-size: 1.25rem; }
 
 .topbar {
-  background: var(--accent);
-  color: var(--accent-text);
-  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+  background: var(--bg);
+  color: var(--text);
+  padding: calc(14px + env(safe-area-inset-top)) 16px 10px;
   position: sticky; top: 0; z-index: 5;
 }
 .topbar { display: flex; align-items: center; gap: 8px; }
-.topbar h1 { font-size: 1.15rem; }
+.topbar h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; position: relative; padding-bottom: 7px; }
+.topbar h1::after { content: ''; position: absolute; left: 0; bottom: 0; width: 28px; height: 3px; border-radius: 3px; background: var(--accent); }
 .topbar-back { font: inherit; font-size: 1.3rem; background: none; border: none; color: inherit; padding: 4px 8px 4px 0; min-height: 36px; cursor: pointer; }
 .topbar-back[hidden] { display: none; }
 
