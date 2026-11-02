@@ -8,6 +8,7 @@
 // #/reports/<day|week|month>/<date>
 // #/goals                          daily kcal / macro goals
 // #/supplements                    edit the supplement list
+// #/shopping                       shopping list from saved meals
 // #/colours                        pick app, macro and goal colours
 // #/more                           install, backup, about
 
@@ -19,6 +20,7 @@ import { renderMore } from './views/more.js';
 import { renderGoals } from './views/goals.js';
 import { renderSupplements } from './views/supplements.js';
 import { renderColours } from './views/colours.js';
+import { renderShopping } from './views/shopping.js';
 import { syncThemeFromDb } from './theme.js';
 import { icon } from './icons.js';
 import { startAutoSync, requestPersistence } from './sync.js';
@@ -51,6 +53,7 @@ const ROUTES = {
   reports: { tab: 'reports', title: 'Reports', root: true, render: ([p, d]) => renderReports(view, p, d) },
   more: { tab: 'more', title: 'More', root: true, render: () => renderMore(view) },
   goals: { tab: 'diary', title: 'Daily goals', render: () => renderGoals(view) },
+  shopping: { tab: 'shopping', title: 'Shopping list', root: true, render: () => renderShopping(view) },
   colours: { tab: 'more', title: 'Colours', render: () => renderColours(view) },
   supplements: { tab: 'diary', title: 'My supplements', render: () => renderSupplements(view) },
 };

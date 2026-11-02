@@ -422,3 +422,19 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 .saved-items { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .saved-plus { color: var(--accent); display: inline-flex; margin-left: auto; }
 #saved { margin-bottom: 18px; }
+
+/* ---------- v18: shopping list ---------- */
+.tabbar a { font-size: .74rem; }
+.pick-list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.pick { display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 14px; margin: 0; }
+.pick.on { border-color: var(--accent); }
+.pick-info { flex: 1; min-width: 0; display: flex; flex-direction: column; cursor: pointer; }
+.pick-info .small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stepper { display: flex; align-items: center; gap: 2px; flex: none; }
+.stepper .count { min-width: 28px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pick.on .count { color: var(--accent); }
+.shop-meter { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; margin: 10px 0 4px; }
+.shop-meter i { display: block; height: 100%; background: var(--accent); border-radius: 6px; transition: width .2s; }
+.shop-head .btn { margin-top: 10px; }
+.shop-list { padding: 4px 14px; }
+.shop-emoji { font-size: 1.2rem; line-height: 1; }
