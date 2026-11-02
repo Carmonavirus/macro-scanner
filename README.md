@@ -1,7 +1,10 @@
 # Macro Scanner
 
 A free, installable web app (PWA) for Android that scans barcodes on food products
-(built with German products in mind) and shows calories, protein, carbs and fat.
+(built with German products in mind), logs them into meals and shows calories,
+protein, carbs and fat per meal, day, week and month.
+
+Live: https://carmonavirus.github.io/macro-scanner/
 
 - **Scanning:** Chrome's built-in barcode reader on Android, with a bundled ZXing
   WebAssembly reader as fallback (`vendor/`, MIT licensed). Reads EAN-13, EAN-8, UPC.
@@ -16,12 +19,17 @@ A free, installable web app (PWA) for Android that scans barcodes on food produc
 
 | File | What it does |
 |---|---|
-| `index.html`, `css/app.css` | UI |
-| `js/app.js` | Screens, routing, wiring |
+| `index.html`, `css/app.css` | App shell, styles |
+| `js/app.js` | Routing between screens |
+| `js/ui.js`, `js/dates.js` | Shared helpers (navigation, tiles, dates) |
+| `js/views/diary.js` | Daily diary with meals and totals |
+| `js/views/food.js` | Add food: scan, search, amount, manual entry, edit entry |
+| `js/views/reports.js` | Day / week / month reports |
+| `js/views/more.js` | Install to home screen, backup / restore |
 | `js/scanner.js` | Camera + barcode detection |
 | `js/off.js` | Open Food Facts lookup, maps to the app's product format |
 | `js/nutrition.js` | Product format, macro maths, barcode validation |
-| `js/db.js` | IndexedDB storage (products, scan history). Daily log goes here next. |
+| `js/db.js` | IndexedDB storage: products, scans, diary log, meals per day |
 | `sw.js` | Offline cache of the app files. Bump `VERSION` on each release. |
 
 ## Run locally

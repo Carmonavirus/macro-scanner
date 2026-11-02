@@ -79,3 +79,24 @@ export function productFromForm(data) {
     fetchedAt: new Date().toISOString(),
   };
 }
+
+/** Macros of one diary entry. */
+export const entryMacros = (entry) => scale(entry.per100, entry.grams);
+
+/** Sum of macros over diary entries. Missing values count as 0. */
+export function totals(entries) {
+  const out = Object.fromEntries(MACROS.map((m) => [m.key, 0]));
+  for (const e of entries) {
+    const v = entryMacros(e);
+    for (const { key } of MACROS) out[key] += v[key] || 0;
+  }
+  return out;
+}
+
+/** Share of energy from protein / carbs / fat (4 / 4 / 9 kcal per g), in %. */
+export function energySplit(t) {
+  const p = (t.protein || 0) * 4, c = (t.carbs || 0) * 4, f = (t.fat || 0) * 9;
+  const sum = p + c + f;
+  if (!sum) return { protein: 0, carbs: 0, fat: 0 };
+  return { protein: (p / sum) * 100, carbs: (c / sum) * 100, fat: (f / sum) * 100 };
+}

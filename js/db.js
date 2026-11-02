@@ -1,13 +1,13 @@
 // Local storage in IndexedDB. Everything stays on the device.
 //
-// Stores (v1):
-//   products  key: code   – cached Open Food Facts products and manually entered ones
-//   scans     key: auto   – { code, at } history of scans
-// Future (v2): a "log" store for daily entries { id, date, code, grams, meal } that
-// weekly reports can be built on. Add it in onupgradeneeded with `if (old < 2)`.
+// Stores:
+//   products  key: code   – cached Open Food Facts products and manually entered ones (v1)
+//   scans     key: auto   – { code, at } history of scans (v1)
+//   log       key: auto   – diary entries (v2), see addEntry()
+//   days      key: date   – { date, meals: [{ id, name }] } custom meal list for a day (v2)
 
 const DB_NAME = 'macro-scanner';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let dbPromise;
 
 function open() {
@@ -22,6 +22,11 @@ function open() {
           const scans = db.createObjectStore('scans', { keyPath: 'id', autoIncrement: true });
           scans.createIndex('at', 'at');
         }
+        if (old < 2) {
+          const log = db.createObjectStore('log', { keyPath: 'id', autoIncrement: true });
+          log.createIndex('date', 'date');
+          db.createObjectStore('days', { keyPath: 'date' });
+        }
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
@@ -34,30 +39,97 @@ async function tx(store, mode, fn) {
   const db = await open();
   return new Promise((resolve, reject) => {
     const t = db.transaction(store, mode);
-    const s = t.objectStore(store);
-    const result = fn(s);
+    const result = fn(t.objectStore(store));
     t.oncomplete = () => resolve(result instanceof IDBRequest ? result.result : result);
     t.onerror = () => reject(t.error);
   });
 }
 
+// ---------- Products ----------
+
 export const getProduct = (code) => tx('products', 'readonly', (s) => s.get(code));
 export const putProduct = (product) => tx('products', 'readwrite', (s) => s.put(product));
+export const allProducts = () => tx('products', 'readonly', (s) => s.getAll());
 
 export async function addScan(code) {
   await tx('scans', 'readwrite', (s) => s.add({ code, at: new Date().toISOString() }));
 }
 
-/** Most recent scans, one entry per barcode, joined with the product. */
-export async function recentScans(limit = 20) {
-  const scans = await tx('scans', 'readonly', (s) => s.getAll());
+/** Most recently scanned or logged products, newest first, one per barcode. */
+export async function recentProducts(limit = 30) {
+  const [scans, log] = await Promise.all([
+    tx('scans', 'readonly', (s) => s.getAll()),
+    tx('log', 'readonly', (s) => s.getAll()),
+  ]);
+  const events = [
+    ...scans.map((s) => ({ code: s.code, at: s.at })),
+    ...log.filter((e) => e.code).map((e) => ({ code: e.code, at: e.at })),
+  ].sort((a, b) => (a.at < b.at ? 1 : -1));
   const seen = new Set();
   const out = [];
-  for (const scan of scans.reverse()) {
-    if (seen.has(scan.code)) continue;
-    seen.add(scan.code);
-    out.push(scan);
+  for (const ev of events) {
+    if (seen.has(ev.code)) continue;
+    seen.add(ev.code);
+    const product = await getProduct(ev.code);
+    if (product) out.push(product);
     if (out.length >= limit) break;
   }
-  return Promise.all(out.map(async (scan) => ({ ...scan, product: await getProduct(scan.code) })));
+  return out;
+}
+
+// ---------- Diary ----------
+// Entry: { id, date: 'YYYY-MM-DD', meal: mealId, code, name, brand, unit, grams,
+//          per100: {kcal, protein, ...}, at: ISO }
+// per100 is a snapshot, so later product edits don't change past days.
+
+export const addEntry = (entry) => tx('log', 'readwrite', (s) => s.add({ ...entry, at: new Date().toISOString() }));
+export const getEntry = (id) => tx('log', 'readonly', (s) => s.get(id));
+export const putEntry = (entry) => tx('log', 'readwrite', (s) => s.put(entry));
+export const deleteEntry = (id) => tx('log', 'readwrite', (s) => s.delete(id));
+
+export const entriesForDate = (date) =>
+  tx('log', 'readonly', (s) => s.index('date').getAll(date));
+
+/** Entries with from <= date <= to (inclusive, YYYY-MM-DD strings). */
+export const entriesBetween = (from, to) =>
+  tx('log', 'readonly', (s) => s.index('date').getAll(IDBKeyRange.bound(from, to)));
+
+export const DEFAULT_MEALS = [
+  { id: 'breakfast', name: 'Breakfast' },
+  { id: 'lunch', name: 'Lunch' },
+  { id: 'dinner', name: 'Dinner' },
+  { id: 'snacks', name: 'Snacks' },
+];
+
+export async function mealsForDate(date) {
+  const day = await tx('days', 'readonly', (s) => s.get(date));
+  return day?.meals || DEFAULT_MEALS.map((m) => ({ ...m }));
+}
+
+export async function setMealsForDate(date, meals) {
+  await tx('days', 'readwrite', (s) => s.put({ date, meals }));
+}
+
+// ---------- Backup ----------
+
+export async function exportAll() {
+  const [products, log, days] = await Promise.all([
+    allProducts(),
+    tx('log', 'readonly', (s) => s.getAll()),
+    tx('days', 'readonly', (s) => s.getAll()),
+  ]);
+  return { app: 'macro-scanner', version: 2, exportedAt: new Date().toISOString(), products, log, days };
+}
+
+export async function importAll(data) {
+  if (data?.app !== 'macro-scanner') throw new Error('This is not a Macro Scanner backup file.');
+  const db = await open();
+  await new Promise((resolve, reject) => {
+    const t = db.transaction(['products', 'log', 'days'], 'readwrite');
+    for (const p of data.products || []) t.objectStore('products').put(p);
+    for (const e of data.log || []) t.objectStore('log').put(e);
+    for (const d of data.days || []) t.objectStore('days').put(d);
+    t.oncomplete = resolve;
+    t.onerror = () => reject(t.error);
+  });
 }
