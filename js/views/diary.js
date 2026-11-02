@@ -7,11 +7,12 @@ import { $, $$, esc, go, macroTiles, kcalHeader, splitBar, pmf, toast, actionShe
 import { enableSwipe, collapse } from '../swipe.js';
 import { installBanner, backupBanner } from './more.js';
 import { supplementsCard, bindSupplements } from './supplements.js';
+import { workoutsCard } from './hevy.js';
 import { icon } from '../icons.js';
 
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
-  const [meals, entries, goals, supps] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals(), supplementsCard(date)]);
+  const [meals, entries, goals, supps, workouts] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals(), supplementsCard(date), workoutsCard(date)]);
   const hasGoals = Object.values(goals).some((g) => g > 0);
   const day = totals(entries);
 
@@ -65,6 +66,8 @@ export async function renderDiary(el, dateParam) {
     }).join('')}
 
     <button class="btn wide with-ic" id="btn-add-meal">${icon('plus')} Add another meal</button>
+
+    ${workouts}
 
     ${supps}
   `;

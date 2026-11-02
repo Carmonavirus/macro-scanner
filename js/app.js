@@ -22,6 +22,7 @@ import { renderColours } from './views/colours.js';
 import { syncThemeFromDb } from './theme.js';
 import { icon } from './icons.js';
 import { startAutoSync, requestPersistence } from './sync.js';
+import { autoSync as hevyAutoSync } from './hevy.js';
 
 // Colours: make the page match the saved theme (also after a restore from backup)
 syncThemeFromDb();
@@ -99,6 +100,10 @@ route();
 
 requestPersistence();
 startAutoSync();
+hevyAutoSync();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') hevyAutoSync(); });
+// New workouts from Hevy: refresh the diary if it's on screen
+window.addEventListener('hevyupdated', () => { const n = parseHash().parts[0] || ''; if (n === '' || n === 'day') route(); });
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

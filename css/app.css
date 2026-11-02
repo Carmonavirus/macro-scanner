@@ -383,3 +383,13 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 .swatch.on { box-shadow: 0 0 0 2px var(--text); }
 .colour-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .colour-head .colour-pick { flex: 1; min-width: 0; }
+
+/* ---------- v10: Hevy workouts ---------- */
+.workout details > summary { list-style: none; cursor: pointer; }
+.workout details > summary::-webkit-details-marker { display: none; }
+.workout .chev { color: var(--muted); transition: transform .2s; display: inline-flex; }
+.workout details[open] .chev { transform: rotate(180deg); }
+.workout-ex { list-style: none; margin: 10px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.workout-ex li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+.workout-ex li > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workout-ex li > span:last-child { white-space: nowrap; }
