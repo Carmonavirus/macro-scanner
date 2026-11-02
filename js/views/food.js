@@ -10,7 +10,7 @@ import {
 } from '../nutrition.js';
 import { $, $$, esc, go, backTo, nav, macroTiles, parseNum, toast, amountSlider, bindAmountSlider } from '../ui.js';
 import { icon } from '../icons.js';
-import { searchGeneric, isGeneric, genericProduct } from '../generic.js';
+import { searchGeneric, isGeneric, genericProduct, emojiFor } from '../generic.js';
 
 let scanner;
 export function stopCamera() { scanner?.stop(); scanner = null; }
@@ -132,10 +132,10 @@ export async function renderAdd(el, date, mealId) {
     $('#basics-hint', el).hidden = !!q;
     $('#basics', el).hidden = !basics.length;
     $('#basics-list', el).innerHTML = basics.map((g) => `<li><a href="#/p/${esc(g.code)}?${t.qs}">
-      <span class="thumb">${icon('apple')}</span>
+      <span class="thumb emoji" aria-hidden="true">${g.emoji}</span>
       <span class="info"><strong>${esc(g.name)}</strong><span class="small muted">${fmt(g.per100.kcal, 'kcal')} kcal /100 g · P ${fmt(g.per100.protein)} · C ${fmt(g.per100.carbs)} · F ${fmt(g.per100.fat)}</span></span></a></li>`).join('');
     $('#foods', el).innerHTML = list.map((p) => `<li><a href="#/p/${esc(p.code)}?${t.qs}">
-      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" loading="lazy">` : `<span class="thumb">${icon('utensils')}</span>`}
+      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" loading="lazy">` : emojiFor(p.code) ? `<span class="thumb emoji" aria-hidden="true">${emojiFor(p.code)}</span>` : `<span class="thumb">${icon('utensils')}</span>`}
       <span class="info"><strong>${esc(p.name)}</strong><span class="small muted">${hasMacros(p)
         ? `${fmt(p.per100.kcal, 'kcal')} kcal /100 ${esc(p.unit)}${p.brand ? ' · ' + esc(p.brand) : ''}`
         : 'no macros yet'}</span></span></a></li>`).join('');
@@ -198,7 +198,7 @@ export async function renderProduct(el, code, query) {
 
   el.innerHTML = `
     <div class="product-head">
-      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" class="product-img">` : `<div class="product-img placeholder">${icon('package')}</div>`}
+      ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" class="product-img">` : emojiFor(code) ? `<div class="product-img placeholder emoji" aria-hidden="true">${emojiFor(code)}</div>` : `<div class="product-img placeholder">${icon('package')}</div>`}
       <div>
         <h2>${esc(p.name)}</h2>
         <p class="muted">${esc([p.brand, p.quantity].filter(Boolean).join(' · '))}</p>
