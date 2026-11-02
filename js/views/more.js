@@ -70,6 +70,16 @@ export function renderMore(el) {
     </section>
 
     <section class="card">
+      <h2 class="card-title">Home screen widget</h2>
+      <p class="muted">See today’s kcal and macros on your home screen without opening the app. It’s a small extra app that reads your cloud backup, so turn cloud backup on first.</p>
+      <ol class="steps">
+        <li><a href="https://github.com/Carmonavirus/macro-scanner/releases/latest/download/macro-widget.apk">Download Macro Widget</a> and open the file to install it. If Android asks, allow installing from this source.</li>
+        <li>Open <strong>Macro Widget</strong>, paste your GitHub token (the same one as for cloud backup) and tap Connect.</li>
+        <li>Tap <strong>Add widget to home screen</strong>, or long-press your home screen › Widgets › Macro Widget.</li>
+      </ol>
+    </section>
+
+    <section class="card">
       <h2 class="card-title">Colours</h2>
       <p class="muted">Change the highlight colour, macro colours and the colour a goal turns when you reach it.</p>
       <a class="btn with-ic" href="#/colours">${icon('palette')} Change colours</a>
