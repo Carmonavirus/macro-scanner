@@ -105,7 +105,7 @@ public class MainActivity extends Activity {
             }).start();
         });
         Button open = button("Open Macro Scanner");
-        open.setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(Data.APP_URL))));
+        open.setOnClickListener(v -> OpenApp.open(this));
         Button off = button("Disconnect");
         off.setOnClickListener(v -> {
             Data.disconnect(this);

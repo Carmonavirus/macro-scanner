@@ -95,9 +95,8 @@ public class MacroWidget extends AppWidgetProvider {
         v.setTextViewText(R.id.status, status);
 
         // taps: the widget opens Macro Scanner (or this app to connect), the arrows refresh
-        Intent open = Data.connected(c)
-            ? new Intent(Intent.ACTION_VIEW, Uri.parse(Data.APP_URL))
-            : new Intent(c, MainActivity.class);
+        // OpenApp picks the installed app over the browser when it's there.
+        Intent open = new Intent(c, Data.connected(c) ? OpenApp.class : MainActivity.class);
         open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         v.setOnClickPendingIntent(R.id.root, PendingIntent.getActivity(c, 1, open,
             PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
