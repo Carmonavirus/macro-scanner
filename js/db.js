@@ -32,8 +32,15 @@ function open() {
           db.createObjectStore('settings', { keyPath: 'key' });
         }
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const db = req.result;
+        // A newer version of the app wants to upgrade the database: let it, and reload.
+        db.onversionchange = () => { db.close(); location.reload(); };
+        resolve(db);
+      };
       req.onerror = () => reject(req.error);
+      // An older copy of the app (another tab or the installed app) still has the database open.
+      req.onblocked = () => window.dispatchEvent(new Event('dbblocked'));
     });
   }
   return dbPromise;
