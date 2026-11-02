@@ -1,7 +1,8 @@
 {
   "name": "Macro Scanner",
   "short_name": "Macros",
-  "description": "Scan food barcodes and see their macros.",
+  "description": "Scan food barcodes, log your meals and track your macros.",
+  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
