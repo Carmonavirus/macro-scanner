@@ -6,7 +6,7 @@ import { fetchProduct } from '../off.js';
 import * as db from '../db.js';
 import { today, isValidKey, dayLabel } from '../dates.js';
 import {
-  MACROS, hasMacros, scale, fmt, isValidGtin, isGermanCode, productFromForm, entryMacros,
+  MACROS, hasMacros, scale, fmt, isValidGtin, isGermanCode, productFromForm, entryMacros, totals,
 } from '../nutrition.js';
 import { $, $$, esc, go, backTo, nav, macroTiles, parseNum, toast, amountSlider, bindAmountSlider } from '../ui.js';
 import { icon } from '../icons.js';
@@ -57,6 +57,11 @@ export async function renderAdd(el, date, mealId) {
       <input id="input-code" inputmode="numeric" placeholder="…or type the barcode number" aria-label="Barcode number">
       <button class="btn" type="submit">Look up</button>
     </form>
+
+    <div id="saved" hidden>
+      <h2 class="section-title with-ic">${icon('bookmark')} Saved meals</h2>
+      <ul class="history saved-meals" id="saved-list"></ul>
+    </div>
 
     <div class="row-between">
       <h2 class="section-title">Your foods</h2>
@@ -122,10 +127,43 @@ export async function renderAdd(el, date, mealId) {
   });
   $('#btn-custom', el).addEventListener('click', () => go(`#/edit/new?${t.qs}`));
 
+  // Saved meals: one tap adds every item
+  let saved = await db.getSavedMeals();
+  const renderSaved = (q = '') => {
+    const list = q ? saved.filter((s) => `${s.name} ${s.items.map((i) => i.name).join(' ')}`.toLowerCase().includes(q)) : saved;
+    $('#saved', el).hidden = !list.length;
+    $('#saved-list', el).innerHTML = list.map((s) => {
+      const tot = totals(s.items);
+      return `<li class="saved-meal"><button type="button" class="saved-add" data-saved="${esc(s.id)}">
+        <span class="thumb">${icon('bookmark')}</span>
+        <span class="info"><strong>${esc(s.name)}</strong>
+          <span class="small muted">${s.items.length} item${s.items.length === 1 ? '' : 's'} · ${fmt(tot.kcal, 'kcal')} kcal · P ${fmt(tot.protein)} · C ${fmt(tot.carbs)} · F ${fmt(tot.fat)}</span>
+          <span class="small muted saved-items">${esc(s.items.map((i) => i.name).join(', '))}</span></span>
+        <span class="saved-plus">${icon('plus')}</span>
+      </button><button type="button" class="btn icon ghost" data-saved-del="${esc(s.id)}" aria-label="Delete saved meal ${esc(s.name)}">${icon('trash-2')}</button></li>`;
+    }).join('');
+    $$('[data-saved]', el).forEach((b) => b.addEventListener('click', async () => {
+      const s = saved.find((x) => x.id === b.dataset.saved);
+      b.disabled = true;
+      await db.logSavedMeal(s, t.date, t.meal.id);
+      toast(`Added ${s.name} (${s.items.length} items) to ${t.meal.name}`);
+      backTo(nav.diaryDepth, `#/day/${t.date}`);
+    }));
+    $$('[data-saved-del]', el).forEach((b) => b.addEventListener('click', async () => {
+      const s = saved.find((x) => x.id === b.dataset.savedDel);
+      if (!confirm(`Delete the saved meal “${s.name}”? Days you already logged stay as they are.`)) return;
+      saved = saved.filter((x) => x.id !== s.id);
+      await db.setSavedMeals(saved);
+      renderSaved($('#search', el).value.trim().toLowerCase());
+    }));
+  };
+  renderSaved();
+
   // Your foods: recent first, filtered by search
   const foods = await db.recentProducts(200);
   const renderFoods = () => {
     const q = $('#search', el).value.trim().toLowerCase();
+    renderSaved(q);
     const list = (q ? foods.filter((p) => `${p.name} ${p.brand}`.toLowerCase().includes(q)) : foods).slice(0, 40);
     const basics = q ? searchGeneric(q, 25).filter((g) => !list.some((p) => p.code === g.code)) : [];
     $('#foods-empty', el).hidden = list.length > 0 || basics.length > 0;

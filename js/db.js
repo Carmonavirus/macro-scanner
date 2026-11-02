@@ -135,6 +135,24 @@ export const setMealsForDate = (date, meals) => updateDay(date, { meals });
 // The list lives in settings ('supplements': [{ id, name, dose }]);
 // what was taken on a day lives on that day's record ('taken': { id: true }).
 
+// Saved meals: reusable sets of foods with amounts (settings 'savedMeals').
+// [{ id, name, items: [{ code, name, brand, unit, grams, per100 }], createdAt }]
+export const getSavedMeals = () => getSetting('savedMeals', []);
+export const setSavedMeals = (list) => setSetting('savedMeals', list);
+
+export async function saveMeal(name, entries) {
+  const items = entries.map(({ code, name: n, brand, unit, grams, per100 }) => ({ code, name: n, brand: brand || '', unit: unit || 'g', grams, per100: { ...per100 } }));
+  const list = await getSavedMeals();
+  const meal = { id: `sm${Date.now().toString(36)}`, name, items, createdAt: new Date().toISOString() };
+  await setSavedMeals([meal, ...list]);
+  return meal;
+}
+
+/** Log every item of a saved meal into a day's meal. */
+export async function logSavedMeal(saved, date, mealId) {
+  for (const it of saved.items) await addEntry({ ...it, per100: { ...it.per100 }, date, meal: mealId });
+}
+
 export const getSupplements = () => getSetting('supplements', []);
 export const setSupplements = (list) => setSetting('supplements', list);
 

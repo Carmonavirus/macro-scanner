@@ -103,9 +103,17 @@ export async function renderDiary(el, dateParam) {
     const meal = meals.find((m) => m.id === b.dataset.mealMenu);
     const items = entries.filter((e) => e.meal === meal.id);
     const choice = await actionSheet(meal.name, [
+      ...(items.length ? [{ value: 'save', label: 'Save as meal for later', icon: 'bookmark-plus' }] : []),
       { value: 'rename', label: 'Rename', icon: 'pencil' },
       { value: 'delete', label: 'Delete meal', icon: 'trash-2', danger: true },
     ], icon);
+    if (choice === 'save') {
+      const name = prompt('Name for this saved meal (e.g. Chicken rice bowl)', `My ${meal.name.toLowerCase()}`)?.trim();
+      if (!name) return;
+      await db.saveMeal(name.slice(0, 50), items);
+      toast(`Saved “${name.slice(0, 50)}”. Find it under Add food.`);
+      return;
+    }
     if (choice === 'rename') {
       const v = prompt('New name for this meal', meal.name)?.trim();
       if (!v) return;
