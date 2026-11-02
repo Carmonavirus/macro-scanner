@@ -5,11 +5,12 @@ import { today, addDays, dayLabel, isValidKey } from '../dates.js';
 import { totals, entryMacros, fmt } from '../nutrition.js';
 import { $, $$, esc, go, macroTiles, kcalHeader, splitBar, pmf, toast } from '../ui.js';
 import { installBanner, backupBanner } from './more.js';
+import { supplementsCard, bindSupplements } from './supplements.js';
 import { icon } from '../icons.js';
 
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
-  const [meals, entries, goals] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals()]);
+  const [meals, entries, goals, supps] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals(), supplementsCard(date)]);
   const hasGoals = Object.values(goals).some((g) => g > 0);
   const day = totals(entries);
 
@@ -63,7 +64,10 @@ export async function renderDiary(el, dateParam) {
     }).join('')}
 
     <button class="btn wide with-ic" id="btn-add-meal">${icon('plus')} Add another meal</button>
+
+    ${supps}
   `;
+  bindSupplements(el, date);
 
   $$('[data-day]', el).forEach((b) => b.addEventListener('click', () => go(`#/day/${b.dataset.day}`, { replace: true })));
   $('#pick-date', el).addEventListener('change', (e) => {

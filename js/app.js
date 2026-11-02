@@ -7,6 +7,7 @@
 // #/entry/<id>                     change or remove a diary entry
 // #/reports/<day|week|month>/<date>
 // #/goals                          daily kcal / macro goals
+// #/supplements                    edit the supplement list
 // #/more                           install, backup, about
 
 import { $, $$, parseHash, setNavigateHandler, go, depth, nav } from './ui.js';
@@ -15,6 +16,7 @@ import { renderAdd, renderProduct, renderEdit, renderEntry, stopCamera } from '.
 import { renderReports } from './views/reports.js';
 import { renderMore } from './views/more.js';
 import { renderGoals } from './views/goals.js';
+import { renderSupplements } from './views/supplements.js';
 import { icon } from './icons.js';
 import { startAutoSync, requestPersistence } from './sync.js';
 
@@ -41,6 +43,7 @@ const ROUTES = {
   reports: { tab: 'reports', title: 'Reports', root: true, render: ([p, d]) => renderReports(view, p, d) },
   more: { tab: 'more', title: 'More', root: true, render: () => renderMore(view) },
   goals: { tab: 'diary', title: 'Daily goals', render: () => renderGoals(view) },
+  supplements: { tab: 'diary', title: 'My supplements', render: () => renderSupplements(view) },
 };
 
 let renderSeq = 0;
