@@ -68,6 +68,12 @@ export function renderMore(el) {
       <a class="btn" href="#/goals">Set daily goals</a>
     </section>
 
+    <section class="card">
+      <h2 class="card-title">Colours</h2>
+      <p class="muted">Change the highlight colour, macro colours and the colour a goal turns when you reach it.</p>
+      <a class="btn with-ic" href="#/colours">${icon('palette')} Change colours</a>
+    </section>
+
     <section class="card" id="cloud"></section>
 
     <section class="card">

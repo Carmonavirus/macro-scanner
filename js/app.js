@@ -8,6 +8,7 @@
 // #/reports/<day|week|month>/<date>
 // #/goals                          daily kcal / macro goals
 // #/supplements                    edit the supplement list
+// #/colours                        pick app, macro and goal colours
 // #/more                           install, backup, about
 
 import { $, $$, parseHash, setNavigateHandler, go, depth, nav } from './ui.js';
@@ -17,8 +18,14 @@ import { renderReports } from './views/reports.js';
 import { renderMore } from './views/more.js';
 import { renderGoals } from './views/goals.js';
 import { renderSupplements } from './views/supplements.js';
+import { renderColours } from './views/colours.js';
+import { syncThemeFromDb } from './theme.js';
 import { icon } from './icons.js';
 import { startAutoSync, requestPersistence } from './sync.js';
+
+// Colours: make the page match the saved theme (also after a restore from backup)
+syncThemeFromDb();
+window.addEventListener('datachanged', () => { if (!location.hash.startsWith('#/colours')) syncThemeFromDb(); });
 
 // Static icons in the shell
 $$('[data-icon]').forEach((el) => { el.innerHTML = icon(el.dataset.icon); });
@@ -43,6 +50,7 @@ const ROUTES = {
   reports: { tab: 'reports', title: 'Reports', root: true, render: ([p, d]) => renderReports(view, p, d) },
   more: { tab: 'more', title: 'More', root: true, render: () => renderMore(view) },
   goals: { tab: 'diary', title: 'Daily goals', render: () => renderGoals(view) },
+  colours: { tab: 'more', title: 'Colours', render: () => renderColours(view) },
   supplements: { tab: 'diary', title: 'My supplements', render: () => renderSupplements(view) },
 };
 

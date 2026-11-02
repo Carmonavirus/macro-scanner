@@ -329,3 +329,57 @@ p.with-ic, h2.with-ic { display: flex; }
 .supp-edit .btn.icon .ic { width: 18px; height: 18px; }
 #form-supp { margin-top: 4px; }
 #btn-supp-done { margin-top: 4px; }
+
+/* ---------- v9: swipe to delete, action sheet, toast action ---------- */
+.entries .swipe { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+.entries .swipe .swipe-row { position: relative; z-index: 1; background: var(--card); border-bottom: 0; touch-action: pan-y; -webkit-user-drag: none; user-select: none; -webkit-user-select: none; }
+.swipe-del {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 88px; border: 0; margin: 0;
+  background: #dc2626; color: #fff; font: inherit; font-weight: 600; font-size: .85rem;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer;
+}
+.swipe-del .ic { width: 18px; height: 18px; }
+.swipe.open .swipe-del { /* reachable by keyboard only when open */ }
+
+dialog.sheet {
+  margin: auto auto 0; width: 100%; max-width: 520px; border: 0; padding: 8px 12px calc(12px + env(safe-area-inset-bottom));
+  border-radius: 18px 18px 0 0; background: var(--card); color: var(--text);
+  animation: sheet-up .18s ease-out;
+}
+dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+.sheet-title { text-align: center; color: var(--muted); font-size: .85rem; margin: 6px 0 8px; }
+.sheet-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 12px; border: 0; border-radius: 12px;
+  background: transparent; color: inherit; font: inherit; font-size: 1rem; text-align: left; cursor: pointer;
+}
+.sheet-item:active { background: var(--line); }
+.sheet-item.danger { color: var(--error); }
+.sheet-item.cancel { justify-content: center; margin-top: 4px; border-top: 1px solid var(--line); border-radius: 0; font-weight: 600; }
+
+#toast.has-action { display: flex; align-items: center; gap: 14px; pointer-events: none; }
+#toast.has-action.show { pointer-events: auto; }
+#toast button { border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; padding: 4px 2px; cursor: pointer; opacity: .9; }
+
+/* ---------- v9: colours screen ---------- */
+.colour-preview { padding: 10px; }
+.preview-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.preview-actions .btn { pointer-events: none; padding: 8px 14px; }
+.colour-row { padding: 10px 0; border-top: 1px solid var(--line); }
+.card-title + .colour-row { border-top: 0; padding-top: 2px; }
+.colour-pick { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.colour-pick > span { display: flex; flex-direction: column; min-width: 0; }
+.colour-pick input[type=color] {
+  width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: none; cursor: pointer; flex: none;
+}
+.colour-pick input[type=color]::-webkit-color-swatch-wrapper { padding: 3px; }
+.colour-pick input[type=color]::-webkit-color-swatch { border: 0; border-radius: 9px; }
+.swatches { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 10px 0 0 56px; }
+.swatches .swatch { flex: none; }
+.swatch {
+  width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--card); background: var(--sw);
+  box-shadow: 0 0 0 1px var(--line); padding: 0; cursor: pointer;
+}
+.swatch.on { box-shadow: 0 0 0 2px var(--text); }
+.colour-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.colour-head .colour-pick { flex: 1; min-width: 0; }
