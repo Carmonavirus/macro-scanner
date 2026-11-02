@@ -10,6 +10,7 @@ import {
 } from '../nutrition.js';
 import { $, $$, esc, go, backTo, nav, macroTiles, parseNum, toast } from '../ui.js';
 import { icon } from '../icons.js';
+import { searchGeneric, isGeneric, genericProduct } from '../generic.js';
 
 let scanner;
 export function stopCamera() { scanner?.stop(); scanner = null; }
@@ -61,9 +62,14 @@ export async function renderAdd(el, date, mealId) {
       <h2 class="section-title">Your foods</h2>
       <button class="btn small with-ic" id="btn-custom">${icon('plus')} Food without barcode</button>
     </div>
-    <label class="searchbox">${icon('search')}<input id="search" type="search" placeholder="Search foods you've used before" aria-label="Search your foods"></label>
+    <label class="searchbox">${icon('search')}<input id="search" type="search" placeholder="Search your foods, or fruit, veg &amp; basics" aria-label="Search foods"></label>
+    <p class="hint small" id="basics-hint">No barcode? Type e.g. <em>Apfel</em>, <em>Banane</em>, <em>Reis</em> or <em>Hähnchenbrust</em> to get typical macros.</p>
     <ul class="history" id="foods"></ul>
     <p class="empty" id="foods-empty" hidden>Nothing here yet. Scan something to get started.</p>
+    <div id="basics" hidden>
+      <h2 class="section-title with-ic">${icon('apple')} Basic foods (no barcode)</h2>
+      <ul class="history" id="basics-list"></ul>
+    </div>
   `;
 
   const status = $('#scan-status', el);
@@ -121,7 +127,13 @@ export async function renderAdd(el, date, mealId) {
   const renderFoods = () => {
     const q = $('#search', el).value.trim().toLowerCase();
     const list = (q ? foods.filter((p) => `${p.name} ${p.brand}`.toLowerCase().includes(q)) : foods).slice(0, 40);
-    $('#foods-empty', el).hidden = list.length > 0;
+    const basics = q ? searchGeneric(q, 25).filter((g) => !list.some((p) => p.code === g.code)) : [];
+    $('#foods-empty', el).hidden = list.length > 0 || basics.length > 0;
+    $('#basics-hint', el).hidden = !!q;
+    $('#basics', el).hidden = !basics.length;
+    $('#basics-list', el).innerHTML = basics.map((g) => `<li><a href="#/p/${esc(g.code)}?${t.qs}">
+      <span class="thumb">${icon('apple')}</span>
+      <span class="info"><strong>${esc(g.name)}</strong><span class="small muted">${fmt(g.per100.kcal, 'kcal')} kcal /100 g · P ${fmt(g.per100.protein)} · C ${fmt(g.per100.carbs)} · F ${fmt(g.per100.fat)}</span></span></a></li>`).join('');
     $('#foods', el).innerHTML = list.map((p) => `<li><a href="#/p/${esc(p.code)}?${t.qs}">
       ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" loading="lazy">` : `<span class="thumb">${icon('utensils')}</span>`}
       <span class="info"><strong>${esc(p.name)}</strong><span class="small muted">${hasMacros(p)
@@ -154,7 +166,7 @@ async function lookup(code, setStatus, { refresh = false } = {}) {
 
 function portionOptions(p) {
   const opts = [{ label: `100 ${p.unit}`, grams: 100 }];
-  if (p.servingGrams) opts.push({ label: `1 serving (${fmt(p.servingGrams)} ${p.unit})`, grams: p.servingGrams });
+  if (p.servingGrams) opts.push({ label: `${p.servingLabel || '1 serving'} (${fmt(p.servingGrams)} ${p.unit})`, grams: p.servingGrams });
   const m = /([\d.,]+)\s*(kg|g|l|ml|cl)\b/i.exec(p.quantity || '');
   if (m) {
     const mult = { kg: 1000, g: 1, l: 1000, ml: 1, cl: 10 }[m[2].toLowerCase()];
@@ -165,7 +177,12 @@ function portionOptions(p) {
 }
 
 export async function renderProduct(el, code, query) {
-  const p = await db.getProduct(code);
+  let p = await db.getProduct(code);
+  if (!p && isGeneric(code)) {
+    // First use of a basic food: keep a copy so it shows up under "Your foods" from now on.
+    p = genericProduct(code);
+    if (p) { await db.putProduct(p); await db.addScan(code); }
+  }
   const t = await target(query);
   if (!p) {
     el.innerHTML = '<p class="status">Looking up…</p>';
@@ -176,7 +193,7 @@ export async function renderProduct(el, code, query) {
   }
   const opts = portionOptions(p);
   const complete = hasMacros(p);
-  const isCustom = code.startsWith('custom-');
+  const isCustom = code.startsWith('custom-') || isGeneric(code);
   const start = p.servingGrams || 100;
 
   el.innerHTML = `
@@ -186,7 +203,7 @@ export async function renderProduct(el, code, query) {
         <h2>${esc(p.name)}</h2>
         <p class="muted">${esc([p.brand, p.quantity].filter(Boolean).join(' · '))}</p>
         <p class="muted small">${isCustom ? '' : esc(code)} ${isGermanCode(code) ? '<span class="badge">DE</span>' : ''}
-          ${p.source === 'manual' ? '<span class="badge">entered by you</span>' : ''}</p>
+          ${p.source === 'manual' ? '<span class="badge">entered by you</span>' : ''}${p.source === 'generic' ? '<span class="badge">basic food</span>' : ''}</p>
       </div>
     </div>
     ${complete ? '' : `<div class="notice">Some macros are missing for this product.
@@ -202,6 +219,7 @@ export async function renderProduct(el, code, query) {
       <button class="btn" id="btn-edit">Edit values</button>
       ${p.source === 'off' ? '<button class="btn" id="btn-refresh">Refresh data</button>' : ''}
     </div>
+    ${p.source === 'generic' ? '<p class="muted small">Typical values per 100 g for the fresh or plain food, based on USDA FoodData Central and German label averages. Your exact food can differ a little. Use Edit values to change them.</p>' : ''}
     ${p.source === 'off' ? `<p class="muted small">Values from <a href="https://world.openfoodfacts.org/product/${esc(code)}" target="_blank" rel="noopener">Open Food Facts</a>. Always double check against the pack.</p>` : ''}
   `;
 
