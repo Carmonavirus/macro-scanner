@@ -62,6 +62,9 @@ async function route() {
     view.innerHTML = `<p class="status error">Something went wrong: ${String(err.message).replace(/</g, '&lt;')}</p>`;
   }
   if (seq === renderSeq) view.classList.remove('loading');
+  window.__booted = true;
+  const bootError = document.getElementById('boot-error');
+  if (bootError) bootError.hidden = true;
   window.scrollTo(0, 0);
 }
 
