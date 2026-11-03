@@ -8,8 +8,8 @@ on:
     paths: ['android/**', '.github/workflows/widget.yml']
   workflow_dispatch:
   schedule:
-    # Weekly, so the cached signing key below is never evicted (caches unused for 7 days are dropped).
-    - cron: '17 4 * * 1'
+    # Every 3 days, so the cached signing key below is never evicted (caches unused for 7 days are dropped).
+    - cron: '17 4 */3 * *'
 
 permissions:
   contents: write
@@ -21,8 +21,8 @@ jobs:
     steps:
       - uses: actions/cache/restore@v4
         with:
-          path: ~/.android/debug.keystore
-          key: widget-signing-key-v1
+          path: ~/widget-signing/widget.keystore
+          key: widget-signing-key-v2
 
   build:
     if: github.event_name != 'schedule'
@@ -31,14 +31,24 @@ jobs:
       - uses: actions/checkout@v4
       # Sign every build with the same key, so a new APK installs over the old one.
       # The key is created on the first build and kept in the Actions cache (never in the repo).
+      # Pull request builds get a throwaway key instead, so they can never read the real one.
       - uses: actions/cache@v4
+        if: github.event_name != 'pull_request'
         with:
-          path: ~/.android/debug.keystore
-          key: widget-signing-key-v1
+          path: ~/widget-signing/widget.keystore
+          key: widget-signing-key-v2
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - name: Create the signing key on the first build
+        run: |
+          mkdir -p ~/widget-signing
+          if [ ! -f ~/widget-signing/widget.keystore ]; then
+            keytool -genkeypair -keystore ~/widget-signing/widget.keystore -storepass android -keypass android \
+              -alias androiddebugkey -dname "CN=Macro Widget" -keyalg RSA -keysize 2048 -validity 20000
+          fi
+          echo "WIDGET_KEYSTORE=$HOME/widget-signing/widget.keystore" >> "$GITHUB_ENV"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
