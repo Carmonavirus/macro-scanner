@@ -1,6 +1,6 @@
 // Service worker: caches the app itself so it opens offline and loads instantly.
 // Product data is cached separately in IndexedDB by the app. Bump VERSION on every release.
-const VERSION = 'v44';
+const VERSION = 'v45';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/app.js', 'js/scanner.js', 'js/off.js', 'js/db.js', 'js/nutrition.js', 'js/ui.js', 'js/dates.js', 'js/sync.js', 'js/icons.js',
