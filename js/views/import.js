@@ -114,7 +114,7 @@ export async function renderImport(el) {
     status.className = 'status';
     status.textContent = fs.some((f) => f.type.startsWith('video')) ? 'Watching the video and reading the recipe… this can take a minute.' : 'Reading the recipe…';
     try {
-      const raw = await readRecipe({ link: l, caption: c, files: fs });
+      const raw = await readRecipe({ link: l, caption: c, files: fs, onRetry: () => { status.textContent = 'Gemini is busy, trying again…'; } });
       if (!raw.ingredients?.length) throw new Error('No recipe found in that. Add the caption or the video with the recipe.');
       const draft = toDraft(raw, await db.allProducts(), { link: l, caption: c });
       status.textContent = '';
