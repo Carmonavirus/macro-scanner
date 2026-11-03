@@ -46,3 +46,16 @@ export function refreshSteps(force = false) {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshSteps(); });
 
 export const isToday = (date) => date === today();
+
+// ---------- Calories from steps ----------
+// Walking burns about 0.5 kcal per kg of body weight per km on top of what the body burns
+// anyway (the usual estimate for normal walking pace). Step length ≈ 41.5 % of body height.
+// Same formula as the Macro Widget app (Data.java), so both show the same number.
+export const DEFAULT_BODY = { weight: 75, height: 175 };
+
+export function stepKcal(steps, body) {
+  const weight = body?.weight > 0 ? body.weight : DEFAULT_BODY.weight;
+  const height = body?.height > 0 ? body.height : DEFAULT_BODY.height;
+  const km = (steps * height * 0.415) / 100000;
+  return Math.round(km * weight * 0.5);
+}

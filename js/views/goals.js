@@ -1,4 +1,5 @@
-// Daily goals: calories and grams of protein, carbs and fat.
+// Daily goals: calories and grams of protein, carbs and fat. Also weight and height,
+// used for calories burned by steps.
 
 import * as db from '../db.js';
 import { fmt } from '../nutrition.js';
@@ -12,7 +13,7 @@ const FIELDS = [
 ];
 
 export async function renderGoals(el) {
-  const goals = await db.getGoals();
+  const [goals, body] = await Promise.all([db.getGoals(), db.getBody()]);
   el.innerHTML = `
     <p class="hint">Set what you aim for each day. In the diary, a value gets highlighted once you reach it. Leave a field empty to skip that goal.</p>
     <form id="form-goals" class="edit-form" autocomplete="off">
@@ -22,6 +23,12 @@ export async function renderGoals(el) {
         </label>`).join('')}
       </div>
       <p class="muted small" id="macro-kcal"></p>
+      <h3 class="card-title">About you</h3>
+      <p class="hint small">Used to estimate the calories you burn with your steps. Without it, 75 kg and 175 cm are assumed.</p>
+      <div class="grid2">
+        <label>Weight (kg)<input name="weight" type="text" inputmode="decimal" placeholder="e.g. 80" value="${body.weight > 0 ? fmt(body.weight) : ''}"></label>
+        <label>Height (cm)<input name="height" type="text" inputmode="decimal" placeholder="e.g. 180" value="${body.height > 0 ? fmt(body.height) : ''}"></label>
+      </div>
       <p class="status error" id="goals-error"></p>
       <button class="btn primary" type="submit">Save goals</button>
     </form>
@@ -47,7 +54,18 @@ export async function renderGoals(el) {
       }
       next[f.key] = raw ? v : null;
     }
+    const bodyNext = {};
+    for (const [k, label, min, max] of [['weight', 'Weight', 25, 350], ['height', 'Height', 100, 250]]) {
+      const raw = form[k].value.trim();
+      const v = parseNum(raw);
+      if (raw && (v == null || v < min || v > max)) {
+        $('#goals-error', el).textContent = `${label}: use a number between ${min} and ${max}.`;
+        return;
+      }
+      bodyNext[k] = raw ? v : null;
+    }
     await db.setGoals(next);
+    await db.setBody(bodyNext);
     toast('Goals saved');
     history.length > 1 ? history.back() : (location.hash = '#/');
   });

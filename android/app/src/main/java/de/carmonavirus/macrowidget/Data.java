@@ -44,6 +44,7 @@ final class Data {
         long updatedAt;
         long steps = -1;          // -1 = unknown
         long stepsAt;
+        double weight, height;    // from the app's goals screen, 0 = not set
         String error;
     }
 
@@ -58,6 +59,7 @@ final class Data {
         t.accent = p.getString("accent", null); t.goal = p.getString("goalColor", null);
         t.cProtein = p.getString("cProtein", null); t.cCarbs = p.getString("cCarbs", null); t.cFat = p.getString("cFat", null);
         t.updatedAt = p.getLong("updatedAt", 0);
+        t.weight = p.getFloat("weight", 0); t.height = p.getFloat("height", 0);
         t.error = p.getString("error", null);
         if (LocalDate.now().toString().equals(p.getString("stepsDate", null))) {
             t.steps = p.getLong("steps", -1);
@@ -136,6 +138,7 @@ final class Data {
                 .putLong("updatedAt", System.currentTimeMillis())
                 .remove("error");
             ed.putFloat("gKcal", 0).putFloat("gProtein", 0).putFloat("gCarbs", 0).putFloat("gFat", 0);
+            ed.remove("weight").remove("height");
             ed.remove("accent").remove("goalColor").remove("cProtein").remove("cCarbs").remove("cFat");
             JSONArray settings = backup.optJSONArray("settings");
             if (settings != null) {
@@ -147,6 +150,8 @@ final class Data {
                     if ("goals".equals(s.optString("key"))) {
                         ed.putFloat("gKcal", (float) num(v, "kcal")).putFloat("gProtein", (float) num(v, "protein"))
                           .putFloat("gCarbs", (float) num(v, "carbs")).putFloat("gFat", (float) num(v, "fat"));
+                    } else if ("body".equals(s.optString("key"))) {
+                        ed.putFloat("weight", (float) num(v, "weight")).putFloat("height", (float) num(v, "height"));
                     } else if ("theme".equals(s.optString("key"))) {
                         putColour(ed, "accent", v.optString("accent", null));
                         putColour(ed, "goalColor", v.optString("goal", null));
@@ -160,6 +165,16 @@ final class Data {
         } catch (Exception ex) {
             p.edit().putString("error", ex.getMessage() == null ? "Couldn't load your backup" : ex.getMessage()).apply();
         }
+    }
+
+    /**
+     * Calories burned by walking: about 0.5 kcal per kg per km on top of resting, step length
+     * about 41.5 % of height. Same formula as the web app (js/steps.js stepKcal).
+     */
+    static long stepKcal(long steps, double weight, double height) {
+        double w = weight > 0 ? weight : 75, h = height > 0 ? height : 175;
+        double km = steps * h * 0.415 / 100000.0;
+        return Math.round(km * w * 0.5);
     }
 
     private static void putColour(SharedPreferences.Editor ed, String key, String v) {

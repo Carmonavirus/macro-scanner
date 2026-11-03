@@ -97,7 +97,8 @@ public class MacroWidget extends AppWidgetProvider {
 
         // steps from Health Connect (only when the user allowed it)
         if (t.steps >= 0) {
-            v.setTextViewText(R.id.steps, "\uD83D\uDC5F " + String.format(Locale.getDefault(), "%,d", t.steps) + " steps");
+            v.setTextViewText(R.id.steps, "\uD83D\uDC5F " + String.format(Locale.getDefault(), "%,d", t.steps) + " steps \u00B7 \u2248 "
+                + Data.stepKcal(t.steps, t.weight, t.height) + " kcal");
             v.setViewVisibility(R.id.steps, android.view.View.VISIBLE);
         } else {
             v.setViewVisibility(R.id.steps, android.view.View.GONE);
