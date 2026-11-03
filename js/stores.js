@@ -102,25 +102,86 @@ function macroDistance(a, b) {
   return d('kcal', 40) * 1.5 + d('protein', 4) + d('carbs', 4) + d('fat', 3);
 }
 
-async function search(store, q, onWait) {
-  await takeSlot(onWait);
-  const url = `${OFF_SEARCH}?search_terms=${enc(q)}&tagtype_0=stores&tag_contains_0=contains&tag_0=${enc(store.off)}`
-    + `&tagtype_1=countries&tag_contains_1=contains&tag_1=germany&sort_by=unique_scans_n&page_size=20&json=1&fields=${FIELDS}&lc=de`;
-  let res;
+// Open Food Facts' newer search service: used when the classic search is busy or blocked.
+const OFF_SEARCH2 = 'https://search.openfoodfacts.org/search';
+
+async function fetchJson(url) {
   for (let attempt = 0; ; attempt++) {
+    let res = null;
     try {
       res = await fetch(url, { headers: { Accept: 'application/json' } });
-      if (res.status !== 429 && res.status !== 503) break;
     } catch {
       // A blocked or busy answer comes without the headers the browser needs, so it looks like no internet.
       if (navigator.onLine === false) throw new Error('No internet connection.');
     }
-    if (attempt >= 1) throw new Error('Open Food Facts is busy or limiting searches right now. Wait a minute and try again.');
-    onWait?.(10);
-    await wait(10000);
+    if (res && res.ok) return res.json();
+    if (res && res.status !== 429 && res.status !== 503 && res.status !== 502) throw new Error(`Open Food Facts answered ${res.status}`);
+    if (attempt >= 1) throw new Error('busy');
+    await wait(4000);
   }
-  if (!res.ok) throw new Error(`Open Food Facts answered ${res.status}`);
-  return (await res.json()).products || [];
+}
+
+/**
+ * Search Open Food Facts. `filters` are { stores, countries, brands } tags.
+ * Classic search first (10 a minute); when that's busy, the newer search service.
+ */
+async function offSearch(q, filters, onWait) {
+  await takeSlot(onWait);
+  const tags = Object.entries(filters).filter(([, v]) => v);
+  const url = `${OFF_SEARCH}?search_terms=${enc(q)}${tags.map(([k, v], i) => `&tagtype_${i}=${k}&tag_contains_${i}=contains&tag_${i}=${enc(v)}`).join('')}`
+    + `&sort_by=unique_scans_n&page_size=20&json=1&fields=${FIELDS}&lc=de`;
+  try {
+    return (await fetchJson(url)).products || [];
+  } catch (err) {
+    if (err.message !== 'busy') throw err;
+  }
+  // Newer search: a query with field filters, e.g. "hüttenkäse stores_tags:edeka".
+  const lucene = [q, ...tags.map(([k, v]) => `${k}_tags:"${k === 'countries' ? `en:${v}` : v}"`)].join(' ');
+  try {
+    const j = await fetchJson(`${OFF_SEARCH2}?q=${enc(lucene)}&langs=de&page_size=20&fields=${FIELDS}`);
+    return j.hits || j.products || [];
+  } catch (err) {
+    if (err.message !== 'busy' && !/answered/.test(err.message)) throw err;
+    throw new Error('Open Food Facts is busy or limiting searches right now. Wait a minute and try again.');
+  }
+}
+
+const search = (store, q, onWait) => offSearch(q, { stores: store.off, countries: 'germany' }, onWait);
+
+const slug = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+
+/**
+ * A named brand product from a recipe ("Exquisa" + "Paprika-Chili fitline"): the closest
+ * products on Open Food Facts of that brand, best name match first. Cached for a month.
+ */
+export async function findBranded(brand, product, { onWait } = {}) {
+  const b = String(brand || '').trim();
+  const name = String(product || '').trim();
+  if (!b || !name) return [];
+  const key = `branded1:${b.toLowerCase()}|${name.toLowerCase()}`;
+  try {
+    const hit = JSON.parse(localStorage.getItem(key));
+    if (hit && Date.now() - hit.at < 30 * 864e5) return hit.list;
+  } catch { /* ignore */ }
+  const want = slug(b);
+  const words = name.toLowerCase().replace(new RegExp(b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig'), ' ')
+    .split(/[\s,()/+-]+/).map(slug).filter((w) => w.length > 2);
+  const found = await offSearch(`${b} ${name}`, { countries: 'germany' }, onWait);
+  const list = found
+    .filter((p) => p.code && (p.nutriments?.['energy-kcal_100g'] != null || p.nutriments?.['energy-kj_100g'] != null))
+    .filter((p) => slug(p.brands).includes(want))
+    .map((p) => {
+      const n = normalise(p.code, p);
+      const hay = slug(`${n.name} ${p.product_name || ''}`);
+      const hits = words.filter((w) => hay.includes(w) || hay.includes(w.slice(0, -1))).length;
+      return { ...n, hits };
+    })
+    .filter((p) => !words.length || p.hits > 0)
+    .sort((x, y) => y.hits - x.hits)
+    .slice(0, 3)
+    .map(({ hits, ...p }) => ({ ...p, exact: words.length ? hits / words.length >= 0.6 : true }));
+  try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), list })); } catch { /* ignore */ }
+  return list;
 }
 
 /**

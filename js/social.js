@@ -21,17 +21,22 @@ Return JSON:
 - "titleOriginal": the dish name in the post's own language
 - "servings": how many portions the recipe makes (a number; guess from the amounts if not said, usually 1–4)
 - "minutes": total time in minutes, your best estimate
-- "ingredients": every ingredient of the WHOLE recipe, each with
-  - "said": the ingredient and amount as written or shown, in the post's language, e.g. "2 EL Erdnussbutter"
+- "ingredients": every ingredient of the WHOLE recipe, one entry per food. A line with two foods ("etwas Tomatenmark und Senf", "Salz und Öl") is two entries; split the amount sensibly. Each entry has
+  - "said": that ingredient and amount exactly as written or shown, in the post's language, e.g. "2 EL Erdnussbutter"
   - "saidEn": the same in English, e.g. "2 tbsp peanut butter"
-  - "de": a short German name as in a German food database (e.g. "Haehnchenbrust", "Reis gekocht", "Erdnussbutter")
-  - "en": a short English name
+  - "name": the ingredient's name exactly as the post writes it, without the amount, keeping brand and product names (e.g. "Exquisa Paprika-Chilli fitline", "Schalotten oder Zwiebeln", "Cremefine 7%")
+  - "brand": the brand when the post names one, exactly as written (e.g. "Exquisa", "Philadelphia", "Ehrmann"), otherwise ""
+  - "product": for a named brand product, its product name exactly as written in the post's language without the brand (e.g. "Paprika-Chilli fitline"), otherwise ""
+  - "de": the food's German name as in a German food database, keeping exactly what it is: a processed food stays that food (Tomatenmark is "Tomatenmark", not "Tomate"; Frischkäse is "Frischkäse", not "Hüttenkäse"; Senf is "Senf"). Add the flavour or type when said (e.g. "Frischkäse Paprika Chili light", "Kochcreme 7% Fett", "Reis gekocht")
+  - "en": the same in English (e.g. "tomato paste", "light cream cheese with paprika and chili")
+  - "optional": true when the post calls it optional, a side or "nach Wahl/optional", otherwise false
   - "grams": the amount in grams (ml for liquids) for the whole recipe; convert spoons, cups, pieces etc. to a typical weight; if no amount is given, estimate what was used
-  - "per100": your best estimate of kcal, protein, carbs (without fibre) and fat per 100 g as used
+  - "per100": kcal, protein, carbs (without fibre) and fat per 100 g as used. For a brand product use that product's real label values if you know them
 - "steps": the method as short, clear steps in English. If the post doesn't say, work out sensible steps from what is shown.
 - "stepsOriginal": the same steps in the post's own language (the same text as "steps" if the post is in English)
+- "stated": the nutrition per portion when the post states it (e.g. "Nährwerte p.P.: 483 kcal, 26 g KH, 14 g F, 63 g EW"), as kcal, protein, carbs and fat; all 0 when the post doesn't state it. Say in "statedFor" what it covers if the post says, e.g. "without rice", otherwise ""
 - "notes": anything uncertain, in one short English sentence, or ""
-Skip salt, pepper, water and spices without calories. If there is no recipe at all, return an empty "ingredients" list.`;
+Never leave out an ingredient that has calories, and never replace one food with a different one. Skip only salt, pepper, water and spices without calories. If there is no recipe at all, return an empty "ingredients" list.`;
 
 const SCHEMA = {
   type: 'OBJECT',
@@ -46,18 +51,24 @@ const SCHEMA = {
       items: {
         type: 'OBJECT',
         properties: {
-          said: { type: 'STRING' }, saidEn: { type: 'STRING' }, de: { type: 'STRING' }, en: { type: 'STRING' }, grams: { type: 'NUMBER' },
+          said: { type: 'STRING' }, saidEn: { type: 'STRING' }, name: { type: 'STRING' }, brand: { type: 'STRING' }, product: { type: 'STRING' },
+          de: { type: 'STRING' }, en: { type: 'STRING' }, optional: { type: 'BOOLEAN' }, grams: { type: 'NUMBER' },
           per100: {
             type: 'OBJECT',
             properties: { kcal: { type: 'NUMBER' }, protein: { type: 'NUMBER' }, carbs: { type: 'NUMBER' }, fat: { type: 'NUMBER' } },
             required: ['kcal', 'protein', 'carbs', 'fat'],
           },
         },
-        required: ['said', 'de', 'en', 'grams', 'per100'],
+        required: ['said', 'name', 'de', 'en', 'grams', 'per100'],
       },
     },
     steps: { type: 'ARRAY', items: { type: 'STRING' } },
     stepsOriginal: { type: 'ARRAY', items: { type: 'STRING' } },
+    stated: {
+      type: 'OBJECT',
+      properties: { kcal: { type: 'NUMBER' }, protein: { type: 'NUMBER' }, carbs: { type: 'NUMBER' }, fat: { type: 'NUMBER' } },
+    },
+    statedFor: { type: 'STRING' },
     notes: { type: 'STRING' },
   },
   required: ['language', 'title', 'titleOriginal', 'servings', 'ingredients', 'steps', 'stepsOriginal'],
@@ -110,6 +121,13 @@ function relevant(p, it) {
   return words.some((w) => hay.includes(w) || hay.includes(w.slice(0, -1)));
 }
 
+/** The food's main German word is in the name: "Tomatenmark" is not "Tomate", "Frischkäse" not "Hüttenkäse". */
+function sameFood(p, it) {
+  const main = fold(it.de).split(/\s+/).find((w) => w.length > 2 && !STOP.has(w));
+  if (!main) return true;
+  return fold(`${p.name} ${p.brand || ''}`).replace(/\s+/g, '').includes(main);
+}
+
 /**
  * Turn Gemini's recipe into something to check: each ingredient gets matching foods
  * (your foods and basic foods first, Gemini's estimate last) like voice logging.
@@ -126,20 +144,68 @@ export function toDraft(raw, products, { link, caption }) {
     notes: String(raw.notes || '').trim(),
     link: link || '',
     caption: caption || '',
+    stated: stated(raw.stated),
+    statedFor: String(raw.statedFor || '').trim(),
     ingredients: (raw.ingredients || []).map((it) => {
-      const choices = matchFood(it, products);
+      const brand = String(it.brand || '').trim();
+      const product = brand ? String(it.product || '').trim() : '';
+      // The name as the post writes it: kept as the ingredient's name and used for shop searches.
+      const postName = String(it.name || '').trim() || (brand ? `${brand} ${product}`.trim() : '') || nameOf(it.said) || it.de || it.en || '';
+      // A brand product: only your own foods of that brand count; the basic foods are a different food.
+      const choices = brand ? matchFood(it, products).filter((p) => fold(p.brand).includes(fold(brand).trim())) : matchFood(it, products);
       if (it.per100 && it.per100.kcal >= 0) {
         choices.push({
-          code: null, name: it.de || it.en || it.said, brand: 'Estimated by Gemini', unit: 'g', estimate: true,
+          code: null, name: postName || it.de || it.en, brand: 'Estimated by Gemini', unit: 'g', estimate: true,
           per100: { kcal: +it.per100.kcal || 0, protein: +it.per100.protein || 0, carbs: +it.per100.carbs || 0, fat: +it.per100.fat || 0 },
         });
       }
       // A loose match (e.g. "green pesto" → green peas) is worse than Gemini's own estimate.
       const est = choices[choices.length - 1];
-      if (est?.estimate && choices.length > 1 && !relevant(choices[0], it)) choices.unshift(choices.pop());
-      return { said: it.said || it.en || it.de, saidEn: it.saidEn || '', grams: Math.max(0, Math.round(Number(it.grams) || 0)) || 100, choices, pick: choices.length ? 0 : -1 };
+      if (est?.estimate && choices.length > 1 && !(relevant(choices[0], it) && sameFood(choices[0], it))) choices.unshift(choices.pop());
+      const optional = !!it.optional;
+      return {
+        said: it.said || it.en || it.de, saidEn: it.saidEn || '', postName, brand, product, optional,
+        grams: Math.max(0, Math.round(Number(it.grams) || 0)) || 100, choices,
+        // Optional extras (a side of rice) start left out, like the post's own nutrition usually does.
+        pick: choices.length && !optional ? 0 : -1,
+      };
     }),
   };
+}
+
+/** "400g Hähnchenbrust" → "Hähnchenbrust", "Optional: 200g Skyr" → "Skyr". */
+function nameOf(said) {
+  return String(said || '').replace(/^\s*optional:?\s*/i, '')
+    .replace(/^\s*(ca\.?\s*)?[\d.,/½¼¾-]+\s*(g|kg|ml|l|el|tl|stk\.?|stück|prise|tbsp|tsp|cups?|oz)?\.?\s+/i, '')
+    .replace(/^\s*(etwas|eine?n?|some|a little)\s+/i, '').trim();
+}
+
+/** The post's own per-portion nutrition, or null when it gives none. */
+function stated(x) {
+  if (!x || !(+x.kcal > 0)) return null;
+  return { kcal: +x.kcal || 0, protein: +x.protein || 0, carbs: +x.carbs || 0, fat: +x.fat || 0 };
+}
+
+/**
+ * Compare our per-portion totals with the post's. Returns the macros that are clearly off
+ * (over 15% and more than a few grams/kcal), e.g. [{ key: 'kcal', ours: 610, theirs: 483 }].
+ */
+export function statedGaps(ours, theirs) {
+  if (!theirs) return [];
+  const floor = { kcal: 40, protein: 5, carbs: 5, fat: 4 };
+  return Object.keys(floor)
+    .filter((k) => Math.abs(ours[k] - theirs[k]) > Math.max(floor[k], theirs[k] * 0.15))
+    .map((k) => ({ key: k, ours: ours[k], theirs: theirs[k] }));
+}
+
+/** A brand product found on Open Food Facts: put it first for ingredient `it` and pick it. */
+export function addBranded(it, found) {
+  const fresh = found.filter((p) => !it.choices.some((c) => c.code === p.code));
+  if (!fresh.length) return false;
+  it.choices.unshift(...fresh);
+  // Keep what the user chose by hand; otherwise use the real product.
+  if (it.touched) { if (it.pick >= 0) it.pick += fresh.length; } else it.pick = it.optional ? -1 : 0;
+  return true;
 }
 
 // ---------- My recipes ----------
@@ -165,7 +231,11 @@ export async function saveDraft(d) {
       await db.putProduct(p);
     }
     // Stored per portion, like the built-in recipes.
-    items.push({ code: p.code, name: p.name, brand: p.brand || '', unit: p.unit || 'g', grams: it.grams / d.servings, per100: { ...p.per100 }, said: it.said, saidEn: it.saidEn });
+    const postName = it.postName || '';
+    items.push({
+      code: p.code, name: p.name, brand: p.brand || '', unit: p.unit || 'g', grams: it.grams / d.servings, per100: { ...p.per100 }, said: it.said, saidEn: it.saidEn,
+      ...(postName ? { postName, shopName: postName, targetPer100: { ...p.per100 } } : {}),
+    });
   }
   const recipe = {
     id: `my-${Date.now().toString(36)}`, name: d.title, servings: d.servings, minutes: d.minutes,
@@ -201,7 +271,7 @@ export function myRecipeTotals(r) {
 }
 
 /** Diary-ready items for `portions` portions. */
-export const myRecipeItems = (r, portions = 1) => r.items.map(({ said, saidEn, ...i }) => ({ ...i, per100: { ...i.per100 }, grams: i.grams * portions }));
+export const myRecipeItems = (r, portions = 1) => r.items.map(({ said, saidEn, postName, ...i }) => ({ ...i, per100: { ...i.per100 }, grams: i.grams * portions }));
 
 // ---------- Translation ----------
 

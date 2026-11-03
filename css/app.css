@@ -637,3 +637,9 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .store-pick select { flex: 0 1 auto; min-width: 0; }
 .store-match { color: var(--muted); }
 .store-match.good { color: #16a34a; font-weight: 600; }
+
+/* Recipe import: optional tag, the post's own nutrition */
+.imp-tag { font-weight: 600; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: var(--notice); color: var(--text); margin-left: 4px; }
+.import-review .stated { color: var(--muted); }
+.import-review .stated.off { color: var(--error); }
+.import-review .stated .ic, .import-review .stated svg { width: 14px; height: 14px; vertical-align: -2px; }
