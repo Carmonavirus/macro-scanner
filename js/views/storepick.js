@@ -4,7 +4,7 @@
 import { fmt } from '../nutrition.js';
 import { $, $$, esc, toast } from '../ui.js';
 import { icon } from '../icons.js';
-import { STORES, getStore, setStore, storeSearchUrl, findAtStore, productUrl } from '../stores.js';
+import { STORES, getStore, setStore, storeSearchUrl, findAtStore, productUrl, shopTerm } from '../stores.js';
 
 /** The "Shop at" picker. */
 export function storePicker(store) {
@@ -18,7 +18,7 @@ export function storeRow(store, name, i) {
   const search = storeSearchUrl(store, name);
   return `<span class="store-row">
       <button type="button" class="btn small with-ic" data-find="${i}">${icon('search')} At ${esc(store.name)}</button>
-      ${search ? `<a class="store-link small" href="${esc(search)}" target="_blank" rel="noopener">${esc(store.name.toLowerCase())}.de search ↗</a>` : ''}
+      ${search ? `<a class="store-link small" href="${esc(search)}" target="_blank" rel="noopener">Search “${esc(shopTerm(name))}” on ${esc(store.name.toLowerCase())}.de ↗</a>` : ''}
     </span>
     <div class="store-out" data-out="${i}" hidden></div>`;
 }
@@ -43,7 +43,7 @@ export async function bindStores(root, wants, { onUse, onStore } = {}) {
     out.hidden = false;
     out.innerHTML = '<p class="small muted">Looking…</p>';
     let list;
-    try { list = await findAtStore(store, wants[i]); } catch (err) { out.innerHTML = `<p class="small status error">${esc(err.message)}</p>`; return; }
+    try { list = await findAtStore(store, wants[i], { onWait: (sec) => { out.innerHTML = `<p class="small muted">Open Food Facts allows only a few searches a minute. Searching in ${sec} s…</p>`; } }); } catch (err) { out.innerHTML = `<p class="small status error">${esc(err.message)}</p>`; return; }
     out.dataset.loaded = '1';
     if (!list.length) {
       const search = storeSearchUrl(store, wants[i].name);
