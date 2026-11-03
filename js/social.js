@@ -185,7 +185,7 @@ export async function useProduct(r, n, p) {
   if (!(await db.getProduct(p.code))) await db.putProduct(product);
   const old = r.items[n];
   // shopName keeps searching for the plain food ("Hähnchenbrust"), not the brand product's long name.
-  r.items[n] = { ...old, code: p.code, name: p.name, brand: p.brand || '', unit: product.unit, per100: product.per100, shopName: old.shopName || old.name };
+  r.items[n] = { ...old, code: p.code, name: p.name, brand: p.brand || '', unit: product.unit, per100: product.per100, shopName: old.shopName || old.name, targetPer100: old.targetPer100 || old.per100 };
   await db.setSetting(KEY, (await getMyRecipes()).map((x) => (x.id === r.id ? r : x)));
 }
 

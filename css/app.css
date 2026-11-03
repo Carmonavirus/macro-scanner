@@ -635,3 +635,5 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .shop-list li.shop-item > label { flex: 1; min-width: 0; }
 .shop-store { flex: none; color: var(--accent); text-decoration: none; font-size: .85rem; padding: 6px; }
 .store-pick select { flex: 0 1 auto; min-width: 0; }
+.store-match { color: var(--muted); }
+.store-match.good { color: #16a34a; font-weight: 600; }

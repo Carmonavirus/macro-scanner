@@ -249,7 +249,7 @@ export async function renderMyRecipe(el, id) {
     $('[data-dec]', el).addEventListener('click', () => { portions = Math.max(1, portions - 1); draw(); });
     $('[data-inc]', el).addEventListener('click', () => { portions = Math.min(20, portions + 1); draw(); });
     $('#btn-lang', el)?.addEventListener('click', () => { view.original = !view.original; draw(); });
-    bindStores(el, r.items.map((i) => i.shopName || i.name), {
+    bindStores(el, r.items.map((i) => ({ name: i.shopName || i.name, per100: i.targetPer100 || i.per100 })), {
       onStore: async () => { store = await getStore(); draw(); },
       // Swap the ingredient for the shop's product: its macros replace the old ones.
       onUse: async (n, p) => { await useProduct(r, n, p); per = myRecipeTotals(r); draw(); },

@@ -26,11 +26,11 @@ export function storeRow(store, name, i) {
 const line = (p) => `${fmt(p.per100.kcal, 'kcal')} kcal · P ${fmt(p.per100.protein)} · C ${fmt(p.per100.carbs)} · F ${fmt(p.per100.fat)} per 100 ${esc(p.unit || 'g')}`;
 
 /**
- * Wire up a picker and rows inside `root`. `names[i]` is the ingredient for row i.
+ * Wire up a picker and rows inside `root`. `wants[i]` is { name, per100 } of the ingredient for row i.
  * `onUse(i, product)`, when given, adds a "Use this" button that swaps the ingredient.
  * `onStore()` is called after the shop changes (re-render there).
  */
-export async function bindStores(root, names, { onUse, onStore } = {}) {
+export async function bindStores(root, wants, { onUse, onStore } = {}) {
   const store = await getStore();
   $$('[data-store]', root).forEach((s) => s.addEventListener('change', async () => {
     await setStore(s.value);
@@ -43,19 +43,20 @@ export async function bindStores(root, names, { onUse, onStore } = {}) {
     out.hidden = false;
     out.innerHTML = '<p class="small muted">Looking…</p>';
     let list;
-    try { list = await findAtStore(store, names[i]); } catch (err) { out.innerHTML = `<p class="small status error">${esc(err.message)}</p>`; return; }
+    try { list = await findAtStore(store, wants[i]); } catch (err) { out.innerHTML = `<p class="small status error">${esc(err.message)}</p>`; return; }
     out.dataset.loaded = '1';
     if (!list.length) {
-      const search = storeSearchUrl(store, names[i]);
+      const search = storeSearchUrl(store, wants[i].name);
       out.innerHTML = `<p class="small muted">Open Food Facts doesn’t list this at ${esc(store.name)} yet.${search ? ` Try <a href="${esc(search)}" target="_blank" rel="noopener">${esc(store.name)}’s own search ↗</a>.` : ''}</p>`;
       return;
     }
-    out.innerHTML = `<ul class="store-list">${list.map((p, j) => `
+    out.innerHTML = `<p class="small muted">Closest macros to the recipe first.</p><ul class="store-list">${list.map((p, j) => `
       <li>
         ${p.imageUrl ? `<img src="${esc(p.imageUrl)}" alt="" loading="lazy" width="44" height="44">` : `<span class="store-noimg">${icon('package')}</span>`}
         <a class="info" href="${esc(productUrl(store, p))}" target="_blank" rel="noopener">
           <strong>${esc(p.name)}</strong>
           <span class="small muted">${esc([p.brand, p.quantity].filter(Boolean).join(' · '))}${p.house ? ` · <b class="store-own">${esc(store.name)} brand</b>` : ''}</span>
+          ${p.match != null ? `<span class="small store-match${p.match >= 80 ? ' good' : ''}">${p.match}% macro match</span>` : ''}
           <span class="small muted">${line(p)}</span>
         </a>
         ${onUse ? `<button type="button" class="btn small" data-use="${i}:${j}">Use</button>` : ''}
