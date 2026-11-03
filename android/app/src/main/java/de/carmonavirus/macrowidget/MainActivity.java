@@ -135,6 +135,8 @@ public class MainActivity extends Activity {
                 pin.setOnClickListener(v -> m.requestPinAppWidget(new ComponentName(this, MacroWidget.class), null, null));
             }
         }
+        Button custom = button("Customize widget (text size, colours, what it shows)");
+        custom.setOnClickListener(v -> startActivity(new Intent(this, LookActivity.class)));
         Button now = button("Update now");
         now.setOnClickListener(v -> {
             now.setEnabled(false);

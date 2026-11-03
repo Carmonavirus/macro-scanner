@@ -11,4 +11,6 @@
     android:initialLayout="@layout/widget"
     android:previewLayout="@layout/widget"
     android:description="@string/widget_desc"
+    android:configure="de.carmonavirus.macrowidget.LookActivity"
+    android:widgetFeatures="reconfigurable|configuration_optional"
     android:widgetCategory="home_screen" />
