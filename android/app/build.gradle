@@ -19,7 +19,8 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            // Signed with the build machine's debug key: no secrets in this public repo.
+            // Signed with a debug key that the build workflow keeps in the Actions cache,
+            // so every release has the same signature. No secrets in this public repo.
             signingConfig signingConfigs.debug
         }
     }
