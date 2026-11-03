@@ -119,6 +119,7 @@ public class MacroWidget extends AppWidgetProvider {
         }
 
         applyLook(v, look, night, modern);
+        if (update) v.setViewVisibility(R.id.status, View.VISIBLE);   // always say when a new version is out
 
         // taps: the widget opens Macro Scanner (or this app to connect), the arrows refresh
         // OpenApp picks the installed app over the browser when it's there.
