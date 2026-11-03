@@ -14,11 +14,11 @@ export function storePicker(store) {
 }
 
 /** Buttons under one ingredient: find it at the shop, and the shop's own search where known. */
-export function storeRow(store, name, i) {
+export function storeRow(store, name, i, extra = '') {
   const search = storeSearchUrl(store, name);
   return `<span class="store-row">
       <button type="button" class="btn small with-ic" data-find="${i}">${icon('search')} At ${esc(store.name)}</button>
-      ${search ? `<a class="store-link small" href="${esc(search)}" target="_blank" rel="noopener">Search “${esc(shopTerm(name))}” on ${esc(store.name.toLowerCase())}.de ↗</a>` : ''}
+      ${search ? `<a class="store-link small" href="${esc(search)}" target="_blank" rel="noopener">Search “${esc(shopTerm(name))}” on ${esc(store.name.toLowerCase())}.de ↗</a>` : ''}${extra}
     </span>
     <div class="store-out" data-out="${i}" hidden></div>`;
 }

@@ -620,7 +620,7 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .store-pick select { font: inherit; color: var(--text); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
 .recipe-ingredients li { flex-wrap: wrap; }
 .store-row { flex-basis: 100%; display: flex; align-items: center; gap: 12px; margin-top: 6px; }
-.store-row .btn.small { min-height: 32px; padding: 4px 10px; font-size: .85rem; }
+.store-row .btn.small { min-height: 32px; padding: 4px 10px; font-size: .85rem; white-space: nowrap; flex: none; }
 .store-link { color: var(--accent); text-decoration: none; }
 .store-out { flex-basis: 100%; margin-top: 6px; }
 .store-out[hidden] { display: none; }
@@ -644,3 +644,10 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .import-review .stated.off { color: var(--error); }
 .import-review .stated .ic, .import-review .stated svg { width: 14px; height: 14px; vertical-align: -2px; }
 .recipe-ingredients .macro-src { color: var(--text); opacity: .8; }
+/* Recipe import: the post's words (quote, italic) vs the app's pick (menu, shopping cart) */
+.from-post { display: flex; gap: 6px; align-items: baseline; font-style: italic; color: var(--muted); }
+.from-post strong { color: var(--text); font-weight: 600; }
+.from-post .ic, .from-post svg { width: 13px; height: 13px; flex: none; opacity: .6; position: relative; top: 1px; }
+.to-buy { display: flex; gap: 5px; align-items: center; }
+.to-buy .ic, .to-buy svg { width: 13px; height: 13px; flex: none; color: var(--muted); }
+.store-row .ing-rm { margin-left: auto; min-height: 32px; width: 32px; padding: 0; color: var(--muted); }
