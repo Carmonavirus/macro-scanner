@@ -25,6 +25,7 @@ Return JSON:
   - "said": that ingredient and amount exactly as written or shown, in the post's language, e.g. "2 EL Erdnussbutter"
   - "saidEn": the same in English, e.g. "2 tbsp peanut butter"
   - "name": the ingredient's name exactly as the post writes it, without the amount, keeping brand and product names (e.g. "Exquisa Paprika-Chilli fitline", "Schalotten oder Zwiebeln", "Cremefine 7%")
+  - "buy": what to look for in a German supermarket, in German: the real product a shop sells, as plain as possible (e.g. "Zwiebeln" for "Zwiebelmedaillons", "Hähnchenbrustfilet" for "Hähnchenbrust", "Cremefine zum Kochen 7%" for "Cremefine 7%"). For a brand product, the brand and product name as written (e.g. "Exquisa Paprika-Chilli fitline")
   - "brand": the brand when the post names one, exactly as written (e.g. "Exquisa", "Philadelphia", "Ehrmann"), otherwise ""
   - "product": for a named brand product, its product name exactly as written in the post's language without the brand (e.g. "Paprika-Chilli fitline"), otherwise ""
   - "de": the food's German name as in a German food database, keeping exactly what it is: a processed food stays that food (Tomatenmark is "Tomatenmark", not "Tomate"; Frischkäse is "Frischkäse", not "Hüttenkäse"; Senf is "Senf"). Add the flavour or type when said (e.g. "Frischkäse Paprika Chili light", "Kochcreme 7% Fett", "Reis gekocht")
@@ -51,7 +52,7 @@ const SCHEMA = {
       items: {
         type: 'OBJECT',
         properties: {
-          said: { type: 'STRING' }, saidEn: { type: 'STRING' }, name: { type: 'STRING' }, brand: { type: 'STRING' }, product: { type: 'STRING' },
+          said: { type: 'STRING' }, saidEn: { type: 'STRING' }, name: { type: 'STRING' }, buy: { type: 'STRING' }, brand: { type: 'STRING' }, product: { type: 'STRING' },
           de: { type: 'STRING' }, en: { type: 'STRING' }, optional: { type: 'BOOLEAN' }, grams: { type: 'NUMBER' },
           per100: {
             type: 'OBJECT',
@@ -164,7 +165,7 @@ export function toDraft(raw, products, { link, caption }) {
       if (est?.estimate && choices.length > 1 && !(relevant(choices[0], it) && sameFood(choices[0], it))) choices.unshift(choices.pop());
       const optional = !!it.optional;
       return {
-        said: it.said || it.en || it.de, saidEn: it.saidEn || '', postName, brand, product, optional,
+        said: it.said || it.en || it.de, saidEn: it.saidEn || '', postName, buy: (brand ? '' : String(it.buy || '').trim()) || postName, brand, product, optional,
         grams: Math.max(0, Math.round(Number(it.grams) || 0)) || 100, choices,
         // Optional extras (a side of rice) start left out, like the post's own nutrition usually does.
         pick: choices.length && !optional ? 0 : -1,
@@ -220,6 +221,7 @@ export async function saveDraft(d) {
   for (const it of d.ingredients) {
     let p = it.pick >= 0 ? it.choices[it.pick] : null;
     if (!p) continue;
+    const src = p.estimate ? 'ai' : (p.source || '');
     if (p.estimate) {
       p = {
         code: `custom-ai-${Date.now().toString(36)}${n++}`, name: p.name, brand: '', imageUrl: null, quantity: null,
@@ -232,9 +234,10 @@ export async function saveDraft(d) {
     }
     // Stored per portion, like the built-in recipes.
     const postName = it.postName || '';
+    const buy = it.buy || postName;
     items.push({
-      code: p.code, name: p.name, brand: p.brand || '', unit: p.unit || 'g', grams: it.grams / d.servings, per100: { ...p.per100 }, said: it.said, saidEn: it.saidEn,
-      ...(postName ? { postName, shopName: postName, targetPer100: { ...p.per100 } } : {}),
+      code: p.code, name: p.name, brand: p.brand || '', unit: p.unit || 'g', grams: it.grams / d.servings, per100: { ...p.per100 }, said: it.said, saidEn: it.saidEn, src,
+      ...(postName ? { postName, buy, shopName: buy, targetPer100: { ...p.per100 } } : {}),
     });
   }
   const recipe = {
@@ -255,7 +258,7 @@ export async function useProduct(r, n, p) {
   if (!(await db.getProduct(p.code))) await db.putProduct(product);
   const old = r.items[n];
   // shopName keeps searching for the plain food ("Hähnchenbrust"), not the brand product's long name.
-  r.items[n] = { ...old, code: p.code, name: p.name, brand: p.brand || '', unit: product.unit, per100: product.per100, shopName: old.shopName || old.name, targetPer100: old.targetPer100 || old.per100 };
+  r.items[n] = { ...old, code: p.code, name: p.name, brand: p.brand || '', unit: product.unit, per100: product.per100, src: 'off', shopName: old.shopName || old.name, targetPer100: old.targetPer100 || old.per100 };
   await db.setSetting(KEY, (await getMyRecipes()).map((x) => (x.id === r.id ? r : x)));
 }
 
@@ -271,7 +274,7 @@ export function myRecipeTotals(r) {
 }
 
 /** Diary-ready items for `portions` portions. */
-export const myRecipeItems = (r, portions = 1) => r.items.map(({ said, saidEn, postName, ...i }) => ({ ...i, per100: { ...i.per100 }, grams: i.grams * portions }));
+export const myRecipeItems = (r, portions = 1) => r.items.map(({ said, saidEn, postName, buy, src, ...i }) => ({ ...i, per100: { ...i.per100 }, grams: i.grams * portions }));
 
 // ---------- Translation ----------
 
