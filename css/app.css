@@ -537,3 +537,34 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .eat-cta { display: flex; gap: 12px; align-items: center; text-decoration: none; color: inherit; }
 .eat-cta .info { flex: 1; display: flex; flex-direction: column; }
 .eat-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: .9rem; }
+
+/* ---------- v30: voice logging ---------- */
+.voice-cta { width: 100%; justify-content: center; margin-bottom: 12px; box-sizing: border-box; }
+.voice-card { display: grid; gap: 12px; justify-items: center; }
+.voice-card .chips { margin: 0; justify-self: start; }
+.mic-btn {
+  width: 88px; height: 88px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
+  background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.18);
+}
+.mic-btn .ic { width: 38px; height: 38px; }
+.mic-btn.on { animation: mic-pulse 1.2s ease-in-out infinite; }
+@keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); } 50% { box-shadow: 0 0 0 16px color-mix(in srgb, var(--accent) 0%, transparent); } }
+.hint.center { text-align: center; }
+#said { width: 100%; box-sizing: border-box; font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); resize: vertical; }
+.voice-card .btn.primary { width: 100%; justify-content: center; }
+.voice-list { list-style: none; padding: 0; margin: 0 0 12px; display: grid; gap: 8px; }
+.voice-item { background-color: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 6px; }
+.voice-item.mx {
+  background-image: linear-gradient(90deg, color-mix(in srgb, var(--protein) 50%, var(--card)) 0 var(--a), color-mix(in srgb, var(--carbs) 50%, var(--card)) var(--a) var(--b), color-mix(in srgb, var(--fat) 50%, var(--card)) var(--b) 100%);
+  background-repeat: no-repeat; background-position: left bottom; background-size: 100% var(--tint);
+}
+.voice-row { display: flex; gap: 8px; align-items: center; }
+.voice-row select { flex: 1; min-width: 0; font: inherit; padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+.voice-g { display: flex; align-items: center; gap: 4px; flex: none; }
+.voice-g input { width: 72px; }
+.voice-total { margin: 0 0 10px; }
+#btn-add-all { width: 100%; justify-content: center; margin-bottom: 8px; }
+.chain-badge {
+  width: 48px; height: 48px; border-radius: 10px; flex: none; display: grid; place-items: center;
+  background: var(--chain); color: #fff; font-weight: 800; font-size: .95rem; letter-spacing: -.02em;
+}

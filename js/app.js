@@ -25,6 +25,7 @@ import { renderColours } from './views/colours.js';
 import { renderShopping } from './views/shopping.js';
 import { renderRecipes, renderRecipe, renderMealdbRecipe } from './views/recipes.js';
 import { renderEatOut } from './views/eatout.js';
+import { renderVoice } from './views/voice.js';
 import { syncThemeFromDb } from './theme.js';
 import { icon } from './icons.js';
 import { startAutoSync, requestPersistence } from './sync.js';
@@ -51,6 +52,7 @@ const ROUTES = {
   '': { tab: 'diary', title: 'Diary', root: true, render: () => renderDiary(view) },
   day: { tab: 'diary', title: 'Diary', root: true, render: ([d]) => renderDiary(view, d) },
   add: { tab: 'diary', title: 'Add food', render: ([d, m]) => renderAdd(view, d, m) },
+  voice: { tab: 'diary', title: 'Say what you ate', render: ([d, m]) => renderVoice(view, d, m) },
   p: { tab: 'diary', title: 'Food', render: ([code], q) => renderProduct(view, code, q) },
   edit: { tab: 'diary', title: 'Nutrition values', render: ([code], q) => renderEdit(view, code, q) },
   entry: { tab: 'diary', title: 'Edit entry', render: ([id]) => renderEntry(view, id) },

@@ -13,6 +13,7 @@ const MEAL_MAX = 1200;
 const state = { chain: 'all' };
 
 const line = (t) => `${fmt(t.kcal, 'kcal')} kcal · P ${fmt(t.protein)} · C ${fmt(t.carbs)} · F ${fmt(t.fat)}`;
+const badge = (c) => `<span class="chain-badge" style="--chain:${c.color}" aria-hidden="true">${esc(c.badge)}</span>`;
 const checked = new Date(CHAINS_CHECKED).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
 
 export async function renderEatOut(el) {
@@ -42,7 +43,7 @@ export async function renderEatOut(el) {
     </section>
     <div class="chips" id="eat-chains">
       <button class="chip${state.chain === 'all' ? ' active' : ''}" data-chain="all">All</button>
-      ${chainIds.map((id) => { const c = id === 'own' ? { name: 'My dishes', emoji: '⭐' } : chainById(id); return `<button class="chip${state.chain === id ? ' active' : ''}" data-chain="${id}">${c.emoji} ${esc(c.name)}</button>`; }).join('')}
+      ${chainIds.map((id) => { const c = chainById(id); return `<button class="chip${state.chain === id ? ' active' : ''}" data-chain="${id}">${esc(id === 'own' ? 'My dishes' : c.name)}</button>`; }).join('')}
     </div>
     <ul class="history eat-list" id="eat-list"></ul>
     <p class="hint small">Values per portion as sold in Germany, checked ${esc(checked)}. They’re close but not exact, and limited-time specials aren’t in the list. For a special, check its numbers in the chain’s app and add it below.</p>
@@ -77,10 +78,10 @@ export async function renderEatOut(el) {
     }
     shown = suggest(target, { chains, extra });
     list.innerHTML = shown.map((o, i) => {
-      const c = o.chain === 'own' ? { name: 'My dish', emoji: '⭐' } : chainById(o.chain);
+      const c = chainById(o.chain);
       const after = left.kcal - o.kcal;
       return `<li><div ${tintAttrs(o, 'eat-row')}>
-        <span class="thumb emoji" aria-hidden="true">${c.emoji}</span>
+        ${badge(c)}
         <span class="info"><strong>${esc(partsLabel(o.parts))}</strong>
           <span class="small muted">${esc(c.name)} · ${line(o)}</span>
           <span class="small eat-after">${i === 0 ? '<b>Best fit</b> · ' : ''}${after >= 0 ? `${fmt(after, 'kcal')} kcal left after` : `${fmt(-after, 'kcal')} kcal over`}</span></span>
