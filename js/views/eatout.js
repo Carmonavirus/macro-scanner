@@ -6,7 +6,7 @@ import { totals, fmt, tintAttrs } from '../nutrition.js';
 import { $, $$, esc, toast, actionSheet } from '../ui.js';
 import { icon } from '../icons.js';
 import { today } from '../dates.js';
-import { CHAINS, CHAINS_CHECKED, chainById, suggest, dishItem, partsLabel, SORTS } from '../chains.js';
+import { CHAINS, CHAINS_CHECKED, chainById, suggest, dishItem, partsLabel, SORTS, dishLinks } from '../chains.js';
 
 const CUSTOM_KEY = 'eatOutCustom';
 const MEAL_MAX = 1200;
@@ -51,6 +51,7 @@ export async function renderEatOut(el) {
     </label>
     <ul class="history eat-list" id="eat-list"></ul>
     <p class="hint small">Values per portion as sold in Germany, checked ${esc(checked)}. Prices are typical single-item prices in Germany; they vary by restaurant and are usually higher on delivery apps. Macros are close but not exact, and limited-time specials aren’t in the list. For a special, check its numbers in the chain’s app and add it below.</p>
+    <p class="hint small">Price sources: ${CHAINS.map((c) => `<a href="${esc(c.priceSrc)}" target="_blank" rel="noopener">${esc(c.name)}</a>`).join(', ')}.</p>
 
     <details class="card eat-own">
       <summary class="with-ic">${icon('plus')} Add a dish yourself <span class="muted small">(${custom.length})</span></summary>
@@ -90,7 +91,7 @@ export async function renderEatOut(el) {
         <span class="info"><strong>${esc(partsLabel(o.parts))}</strong>
           <span class="small muted">${esc(c.name)} · ${line(o)}</span>
           <span class="small eat-after">${o.price != null ? `<b class="eat-price">≈ ${euro(o.price)}</b> · ` : ''}${i === 0 && state.sort === 'fit' ? '<b>Best fit</b> · ' : ''}${after >= 0 ? `${fmt(after, 'kcal')} kcal left after` : `${fmt(-after, 'kcal')} kcal over`}</span>
-          ${c.site ? `<span class="small eat-links"><a href="${esc(c.site)}" target="_blank" rel="noopener">${esc(c.name)} website ↗</a> · <a href="${esc(c.nutritionSrc)}" target="_blank" rel="noopener">nutrition ↗</a> · <a href="${esc(c.priceSrc)}" target="_blank" rel="noopener">prices ↗</a></span>` : ''}</span>
+          ${o.parts.map((p) => { const l = dishLinks(p); return l ? `<span class="small eat-links"><span class="eat-part">${esc(p.name)}${p.price != null ? ` ${euro(p.price)}` : ''}:</span> <a href="${esc(l.menu)}" target="_blank" rel="noopener">${esc(l.menuLabel)} ↗</a> · <a href="${esc(l.nutrition)}" target="_blank" rel="noopener">nutrition ↗</a></span>` : ''; }).join('')}</span>
         <button class="btn icon" data-log="${i}" aria-label="Add to today">${icon('plus')}</button>
       </div></li>`;
     }).join('') || '<li class="empty">Nothing here fits what’s left today.</li>';
