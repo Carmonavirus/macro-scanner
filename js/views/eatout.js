@@ -6,11 +6,12 @@ import { totals, fmt, tintAttrs } from '../nutrition.js';
 import { $, $$, esc, toast, actionSheet } from '../ui.js';
 import { icon } from '../icons.js';
 import { today } from '../dates.js';
+import { locate, nearby, pickNearest, fmtDist, directionsUrl } from '../nearby.js';
 import { CHAINS, CHAINS_CHECKED, chainById, suggest, dishItem, partsLabel, SORTS, dishLinks } from '../chains.js';
 
 const CUSTOM_KEY = 'eatOutCustom';
 const MEAL_MAX = 1200;
-const state = { chain: 'all', sort: 'fit' };
+const state = { chain: 'all', sort: 'fit', near: null };   // near: { list } from the last location search
 const euro = (v) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 
 const line = (t) => `${fmt(t.kcal, 'kcal')} kcal · P ${fmt(t.protein)} · C ${fmt(t.carbs)} · F ${fmt(t.fat)}`;
@@ -41,6 +42,12 @@ export async function renderEatOut(el) {
         ? `<p class="eat-left-line"><strong>${fmt(Math.max(0, left.kcal), 'kcal')} kcal</strong>${goals.protein > 0 ? ` · P ${fmt(Math.max(0, left.protein))} g` : ''}${goals.carbs > 0 ? ` · C ${fmt(Math.max(0, left.carbs))} g` : ''}${goals.fat > 0 ? ` · F ${fmt(Math.max(0, left.fat))} g` : ''}</p>
         ${scale < 1 ? `<p class="hint small">That’s more than one meal, so dishes aim for about ${MEAL_MAX} kcal.</p>` : ''}`
         : '<p class="hint">Set a calorie goal to see what fits. Until then, dishes up to 800 kcal are shown. <a href="#/goals">Set goals</a></p>'}
+    </section>
+    <section class="card eat-near">
+      <button class="btn with-ic" id="btn-near">${icon('map-pin')} ${state.near ? 'Search again' : 'Find the nearest restaurants'}</button>
+      <p class="status" id="near-status" role="status"></p>
+      <ul class="near-list" id="near-list"></ul>
+      <p class="hint small">Uses your location once, only to ask OpenStreetMap’s free map server which of these chains are nearby. Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>.</p>
     </section>
     <div class="chips" id="eat-chains">
       <button class="chip${state.chain === 'all' ? ' active' : ''}" data-chain="all">All</button>
@@ -98,12 +105,62 @@ export async function renderEatOut(el) {
   };
   draw();
 
-  $('#eat-sort', el).addEventListener('change', (e) => { state.sort = e.target.value; draw(); });
-  $$('[data-chain]', el).forEach((b) => b.addEventListener('click', () => {
-    state.chain = b.dataset.chain;
-    $$('[data-chain]', el).forEach((x) => x.classList.toggle('active', x === b));
+  // ---------- Nearest restaurants ----------
+  const nearList = $('#near-list', el);
+  const nearStatus = $('#near-status', el);
+  const setChain = (id) => {
+    state.chain = id;
+    $$('[data-chain]', el).forEach((x) => x.classList.toggle('active', x.dataset.chain === id));
     draw();
-  }));
+  };
+  const drawNear = () => {
+    if (!state.near) { nearList.innerHTML = ''; return; }
+    const near = pickNearest(state.near.list);
+    if (!near.length) {
+      nearList.innerHTML = '<li class="muted small">None of these chains within 15 km.</li>';
+      return;
+    }
+    nearList.innerHTML = near.map((r) => {
+      const c = chainById(r.chain);
+      return `<li class="near-row">
+        ${badge(c)}
+        <span class="info"><strong>${esc(r.name)}</strong>
+          <span class="small muted">${esc(fmtDist(r.dist))}${r.address ? ` · ${esc(r.address)}` : ''}</span></span>
+        <button class="btn small${state.chain === r.chain ? ' primary' : ''}" data-near-chain="${esc(r.chain)}">Dishes</button>
+        <a class="btn icon" href="${esc(directionsUrl(r))}" target="_blank" rel="noopener" aria-label="Directions to ${esc(r.name)}">${icon('navigation')}</a>
+      </li>`;
+    }).join('');
+    $$('[data-near-chain]', nearList).forEach((b) => b.addEventListener('click', () => {
+      setChain(b.dataset.nearChain);
+      drawNear();
+      $('#eat-chains', el).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+  };
+  drawNear();
+  $('#btn-near', el).addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    nearStatus.className = 'status';
+    nearStatus.textContent = 'Finding your location…';
+    try {
+      const here = await locate();
+      nearStatus.textContent = 'Looking for restaurants nearby…';
+      const list = await nearby(here);
+      state.near = { list };
+      nearStatus.textContent = '';
+      btn.innerHTML = `${icon('map-pin')} Search again`;
+      // Show the closest restaurant's dishes straight away
+      if (list.length) setChain(pickNearest(list)[0].chain);
+      drawNear();
+    } catch (err) {
+      nearStatus.className = 'status error';
+      nearStatus.textContent = err.message;
+    }
+    btn.disabled = false;
+  });
+
+  $('#eat-sort', el).addEventListener('change', (e) => { state.sort = e.target.value; draw(); });
+  $$('[data-chain]', el).forEach((b) => b.addEventListener('click', () => { setChain(b.dataset.chain); drawNear(); }));
 
   list.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-log]');
