@@ -22,6 +22,7 @@ public class MacroWidget extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context c, AppWidgetManager m, int[] ids) {
+        StepService.startIfEnabled(c);
         drawAll(c);
         refreshInBackground(c);
         RefreshJob.schedule(c);
