@@ -92,6 +92,40 @@ final class Data {
         prefs(c).edit().clear().apply();
     }
 
+    // ---------- New versions of this app ----------
+
+    static final String APK_URL = "https://github.com/Carmonavirus/macro-scanner/releases/latest/download/macro-widget.apk";
+    private static final String LATEST_URL = "https://api.github.com/repos/Carmonavirus/macro-scanner/releases/latest";
+
+    /** This app's build number (the same number as the widget-vN release it came from). */
+    static long installedVersion(Context c) {
+        try {
+            android.content.pm.PackageInfo i = c.getPackageManager().getPackageInfo(c.getPackageName(), 0);
+            return android.os.Build.VERSION.SDK_INT >= 28 ? i.getLongVersionCode() : i.versionCode;
+        } catch (Exception e) {
+            return Long.MAX_VALUE;
+        }
+    }
+
+    /** True when a newer Macro Widget is on GitHub than the one installed. */
+    static boolean updateAvailable(Context c) {
+        return prefs(c).getLong("latestVersion", 0) > installedVersion(c);
+    }
+
+    /** Look up the newest release, at most every 6 hours. Never throws. */
+    static void checkForUpdate(Context c, String token, boolean force) {
+        SharedPreferences p = prefs(c);
+        long now = System.currentTimeMillis();
+        if (!force && now - p.getLong("latestCheckedAt", 0) < 6 * 3600_000L) return;
+        try {
+            String tag = new JSONObject(get(LATEST_URL, token)).optString("tag_name", "");
+            if (tag.startsWith("widget-v")) {
+                p.edit().putLong("latestVersion", Long.parseLong(tag.substring(8)))
+                    .putLong("latestCheckedAt", now).apply();
+            }
+        } catch (Exception ignored) { /* try again next time */ }
+    }
+
     /** Read today's steps from Health Connect into the cache. Returns them, or -1. */
     static long readSteps(Context c) {
         long steps = Steps.today(c);
@@ -109,6 +143,7 @@ final class Data {
         String gist = p.getString("gist", null);
         if (token == null || gist == null) return;
         long steps = Math.max(readSteps(c), StepCounter.today(c));
+        checkForUpdate(c, token, false);
         try {
             JSONObject gistJson = new JSONObject(get("https://api.github.com/gists/" + gist, token));
             JSONObject backup = readBackup(gistJson, token);
