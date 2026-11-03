@@ -29,7 +29,7 @@ const macroLine = (t) => `${fmt(t.kcal, 'kcal')} kcal · P ${fmt(t.protein)} · 
 // ---------- List ----------
 export function renderRecipes(el) {
   el.innerHTML = `
-    <a class="card eat-cta" href="#/eatout"><span class="thumb" aria-hidden="true">🍔</span>
+    <a class="card eat-cta" href="#/eatout"><span class="thumb" aria-hidden="true">${icon('hamburger')}</span>
       <span class="info"><strong>No time to cook? Eat out</strong><span class="small muted">Dishes from McDonald’s, Burger King, KFC, Subway and dean&amp;david that fit what’s left today</span></span>${icon('chevron-right')}</a>
     <p class="hint">High-protein recipes with macros worked out per portion. Log them, save them as a meal or put the ingredients on your shopping list.</p>
     <div class="chips recipe-filters">${FILTERS.map((f) => `<button class="chip${state.filter === f.id ? ' active' : ''}" data-filter="${esc(f.id)}">${esc(f.label)}</button>`).join('')}</div>

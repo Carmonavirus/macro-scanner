@@ -536,7 +536,11 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .own-list .info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .eat-cta { display: flex; gap: 12px; align-items: center; text-decoration: none; color: inherit; }
 .eat-cta .info { flex: 1; display: flex; flex-direction: column; }
-.eat-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: .9rem; }
+.eat-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: .9rem; text-decoration: none; }
+.eat-link .ic { width: 18px; height: 18px; }
+.daybar-foot a { text-decoration: none; }
+.eat-cta .thumb { color: var(--accent); }
+.eat-cta .thumb .ic { width: 26px; height: 26px; }
 
 /* ---------- v30: voice logging ---------- */
 .voice-cta { width: 100%; justify-content: center; margin-bottom: 12px; box-sizing: border-box; }
