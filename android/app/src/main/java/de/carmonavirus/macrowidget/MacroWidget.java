@@ -101,7 +101,9 @@ public class MacroWidget extends AppWidgetProvider {
 
         // status line
         String status;
+        boolean update = Data.connected(c) && Data.updateAvailable(c);
         if (!Data.connected(c)) status = "Tap to open Macro Widget and connect";
+        else if (update) status = "New widget version \u00B7 tap here to update";
         else if (t.error != null) status = t.error;
         else if (t.updatedAt == 0) status = "Loading…";
         else status = "Updated " + DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date(t.updatedAt));
@@ -124,6 +126,11 @@ public class MacroWidget extends AppWidgetProvider {
         open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         v.setOnClickPendingIntent(R.id.root, PendingIntent.getActivity(c, 1, open,
             PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+        if (update) {
+            Intent upd = new Intent(c, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            v.setOnClickPendingIntent(R.id.status, PendingIntent.getActivity(c, 3, upd,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
+        }
         Intent refresh = new Intent(c, MacroWidget.class).setAction(ACTION_REFRESH);
         v.setOnClickPendingIntent(R.id.refresh, PendingIntent.getBroadcast(c, 2, refresh,
             PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));

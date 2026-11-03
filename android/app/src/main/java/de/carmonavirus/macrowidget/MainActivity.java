@@ -113,6 +113,13 @@ public class MainActivity extends Activity {
         }
 
         Data.Today t = Data.cached(this);
+        if (Data.updateAvailable(this)) {
+            TextView u = text("A new version of Macro Widget is ready. Tap Update, then open the downloaded file "
+                + "and tap Update. It installs over this one and you stay connected.");
+            u.setTypeface(u.getTypeface(), android.graphics.Typeface.BOLD);
+            Button up = button("Update Macro Widget");
+            up.setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(Data.APK_URL))));
+        }
         text(t.error != null ? "Last update failed: " + t.error
             : "Connected. Today so far: " + Math.round(t.kcal) + " kcal · P " + MacroWidget.fmt(t.protein)
               + " g · C " + MacroWidget.fmt(t.carbs) + " g · F " + MacroWidget.fmt(t.fat) + " g");
@@ -134,6 +141,7 @@ public class MainActivity extends Activity {
         now.setOnClickListener(v -> {
             now.setEnabled(false);
             new Thread(() -> {
+                Data.checkForUpdate(getApplicationContext(), Data.prefs(this).getString("token", null), true);
                 Data.refresh(getApplicationContext());
                 MacroWidget.drawAll(getApplicationContext());
                 runOnUiThread(this::render);
@@ -141,6 +149,8 @@ public class MainActivity extends Activity {
         });
         Button open = button("Open Macro Scanner");
         open.setOnClickListener(v -> OpenApp.open(this));
+        text("Version " + Data.installedVersion(this) + ". New versions install over this one; you don’t need to "
+            + "uninstall or connect again.").setAlpha(0.7f);
         Button off = button("Disconnect");
         off.setOnClickListener(v -> {
             Data.disconnect(this);
