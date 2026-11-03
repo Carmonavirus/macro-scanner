@@ -8,6 +8,7 @@
 import * as db from './db.js';
 import { geminiKey, matchFood } from './voice.js';
 import { generateJson } from './gemini.js';
+import { searchTerm } from './stores.js';
 
 const KEY = 'myRecipes';
 /** Gemini takes files inline up to about 20 MB per request; base64 makes them a third bigger. */
@@ -223,6 +224,7 @@ export async function saveDraft(d) {
     let p = it.pick >= 0 ? it.choices[it.pick] : null;
     if (!p) continue;
     const src = p.estimate ? 'ai' : (p.source || '');
+    const buy = buyName(p, it) || it.postName || '';
     if (p.estimate) {
       p = {
         code: `custom-ai-${Date.now().toString(36)}${n++}`, name: p.name, brand: '', imageUrl: null, quantity: null,
@@ -235,7 +237,6 @@ export async function saveDraft(d) {
     }
     // Stored per portion, like the built-in recipes.
     const postName = it.postName || '';
-    const buy = it.buy || postName;
     items.push({
       code: p.code, name: p.name, brand: p.brand || '', unit: p.unit || 'g', grams: it.grams / d.servings, per100: { ...p.per100 }, said: it.said, saidEn: it.saidEn, src,
       ...(postName ? { postName, buy, shopName: buy, targetPer100: { ...p.per100 } } : {}),
@@ -250,6 +251,21 @@ export async function saveDraft(d) {
   return recipe;
 }
 
+/**
+ * What to look for in the shop, from the food that's picked, so it always matches the menu:
+ * a product's brand and name, a basic food's plain German name ("Hähnchenbrust, roh" →
+ * "Hähnchenbrust"), or for Gemini's estimate the product Gemini suggested.
+ */
+export function buyName(p, it = {}) {
+  if (!p) return '';
+  if (p.estimate) return it.buy || it.postName || p.name;
+  if (p.source === 'generic' || String(p.code || '').startsWith('gen-')) return searchTerm(p.name);
+  const name = String(p.name || '').split('·')[0].trim();
+  // Brand words the name doesn't already say: "Rama Cremefine" + "Cremefine 7%" → "Rama Cremefine 7%".
+  const extra = String(p.brand || '').split(/\s+/).filter((w) => w && !name.toLowerCase().includes(w.toLowerCase())).join(' ');
+  return extra ? `${extra} ${name}` : name;
+}
+
 /** Use a shop's product (from stores.js) for ingredient n, and keep it under Your foods. */
 export async function useProduct(r, n, p) {
   const product = {
@@ -259,7 +275,13 @@ export async function useProduct(r, n, p) {
   if (!(await db.getProduct(p.code))) await db.putProduct(product);
   const old = r.items[n];
   // shopName keeps searching for the plain food ("Hähnchenbrust"), not the brand product's long name.
-  r.items[n] = { ...old, code: p.code, name: p.name, brand: p.brand || '', unit: product.unit, per100: product.per100, src: 'off', shopName: old.shopName || old.name, targetPer100: old.targetPer100 || old.per100 };
+  r.items[n] = { ...old, code: p.code, name: p.name, brand: p.brand || '', unit: product.unit, per100: product.per100, src: 'off', ...(old.postName ? { buy: buyName(product) } : {}), shopName: old.shopName || old.name, targetPer100: old.targetPer100 || old.per100 };
+  await db.setSetting(KEY, (await getMyRecipes()).map((x) => (x.id === r.id ? r : x)));
+}
+
+/** Take ingredient n out of a saved recipe. */
+export async function removeIngredient(r, n) {
+  r.items.splice(n, 1);
   await db.setSetting(KEY, (await getMyRecipes()).map((x) => (x.id === r.id ? r : x)));
 }
 

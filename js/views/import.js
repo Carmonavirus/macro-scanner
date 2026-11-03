@@ -14,7 +14,7 @@ import { storePicker, storeRow, bindStores } from './storepick.js';
 import { getStore, findBranded } from '../stores.js';
 import {
   readRecipe, toDraft, saveDraft, cleanLink, textWithoutLink, MAX_MEDIA_BYTES,
-  myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName, useProduct, isTranslated, languageName, texts, statedGaps, addBranded,
+  myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName, useProduct, removeIngredient, isTranslated, languageName, texts, statedGaps, addBranded, buyName,
 } from '../social.js';
 
 // Show the translation (English) or the post's own language; remembered while the app is open.
@@ -131,6 +131,7 @@ export async function renderImport(el) {
 }
 
 function drawDraft(out, d) {
+  let store = null;   // the "Shop at" supermarket, loaded below
   const pickOf = (it) => (it.pick >= 0 ? it.choices[it.pick] : null);
   const amount = (it) => { const p = pickOf(it); if (!p) return null; const f = it.grams / 100; return { kcal: p.per100.kcal * f, protein: p.per100.protein * f, carbs: p.per100.carbs * f, fat: p.per100.fat * f }; };
   const label = (p) => `${p.estimate ? '✨ ' : ''}${p.name}${p.brand && !p.estimate ? ` · ${p.brand}` : ''} (${fmt(p.per100.kcal, 'kcal')} kcal/100 g)`;
@@ -150,12 +151,12 @@ function drawDraft(out, d) {
         ${d.notes ? `<p class="notice small">${esc(d.notes)}</p>` : ''}
       </section>
       <h3 class="section-title">Ingredients for the whole recipe</h3>
+      ${store ? storePicker(store) : ''}
       <ul class="voice-list">${d.ingredients.map((it, i) => {
         const p = pickOf(it);
         const a = amount(it);
         return `<li ${p ? tintAttrs(p.per100, 'voice-item') : 'class="voice-item"'}>
-          ${it.postName ? `<div class="voice-name"><strong>${esc(it.postName)}</strong>${it.buy && it.buy !== it.postName ? ` <span class="small muted">· buy: ${esc(it.buy)}</span>` : ''}</div>` : ''}
-          <div class="voice-said muted small">“${esc(tx.said[i])}”${it.optional ? ' <b class="imp-tag">Optional</b>' : ''}</div>
+          <div class="from-post">${icon('quote')}<span>${it.postName ? `<strong>${esc(it.postName)}</strong> ` : ''}<span class="small">${esc(tx.said[i])}</span>${it.optional ? ' <b class="imp-tag">Optional</b>' : ''}</span></div>
           <div class="voice-row">
             <select data-pick="${i}" aria-label="Food for ${esc(it.said)}">
               ${it.choices.map((c, j) => `<option value="${j}"${j === it.pick ? ' selected' : ''}>${esc(label(c))}</option>`).join('')}
@@ -163,7 +164,9 @@ function drawDraft(out, d) {
             </select>
             <label class="voice-g"><input type="number" inputmode="decimal" min="0" step="any" value="${fmt(it.grams)}" data-g="${i}" aria-label="Grams"> g</label>
           </div>
-          <div class="small ${a ? '' : 'muted'}">${a ? `${macroLine(a)}${p.estimate ? ' · estimated' : ''}${it.brand && p.code && !String(p.code).startsWith('generic-') ? ' · label values' : ''}` : (it.optional ? 'Optional, left out: pick a food to add it' : 'Left out')}</div>
+          <div class="small ${a ? '' : 'muted'}">${a ? `${macroLine(a)}${p.estimate ? ' · estimated' : ''}${it.brand && p.code && !String(p.code).startsWith('gen-') ? ' · label values' : ''}` : (it.optional ? 'Optional, left out: pick a food to add it' : 'Left out')}</div>
+          ${p && buyName(p, it) !== it.postName ? `<div class="small to-buy">${icon('shopping-cart')}${esc(buyName(p, it))}</div>` : ''}
+          ${store ? storeRow(store, buyName(p, it) || it.postName || it.said, i) : ''}
           ${it.lookup ? `<div class="small muted">${esc(it.lookup)}</div>` : ''}
         </li>`;
       }).join('')}</ul>
@@ -175,6 +178,20 @@ function drawDraft(out, d) {
       <p class="muted small">✨ = Gemini’s estimate, because nothing in your foods or the basic foods matched. Amounts from a video are estimates, so check them.</p>`;
 
     $('#btn-lang', out)?.addEventListener('click', () => { view.original = !view.original; draw(); });
+    if (store) {
+      bindStores(out, d.ingredients.map((it) => { const p = pickOf(it); return { name: buyName(p, it) || it.postName || it.said, per100: p?.per100 || null }; }), {
+        onStore: async () => { store = await getStore(); draw(); },
+        // Use the shop's product for this ingredient: it goes first in the menu and is picked.
+        onUse: (i, p) => {
+          const it = d.ingredients[i];
+          const at = it.choices.findIndex((c) => c.code === p.code);
+          if (at < 0) it.choices.unshift({ ...p, source: 'off', per100: { ...p.per100 } });
+          it.pick = at < 0 ? 0 : at;
+          it.touched = true;
+          draw();
+        },
+      });
+    }
     $('#d-title', out).addEventListener('change', (e) => { if (!view.original) d.title = e.target.value.trim() || d.title; });
     $('#d-serv', out).addEventListener('change', (e) => { d.servings = Math.max(1, Math.min(20, Math.round(+e.target.value) || 1)); draw(); });
     $$('[data-pick]', out).forEach((s) => s.addEventListener('change', () => { const it = d.ingredients[+s.dataset.pick]; it.pick = +s.value; it.touched = true; draw(); }));
@@ -192,6 +209,7 @@ function drawDraft(out, d) {
     });
   };
   draw();
+  getStore().then((s) => { store = s; if (document.body.contains(out.querySelector('#d-save'))) draw(); });
   lookUpBrands(d, draw);
 }
 
@@ -231,7 +249,7 @@ function statedLine(per, d) {
 /** Where an ingredient's macros come from: an Open Food Facts product, the basic foods, your own food or Gemini. */
 function macroSource(item) {
   const code = String(item.code || '');
-  const src = item.src || (code.startsWith('custom-ai-') ? 'ai' : code.startsWith('generic-') ? 'generic' : code.startsWith('custom-') ? 'manual' : /^\d{6,}$/.test(code) ? 'off' : '');
+  const src = item.src || (code.startsWith('custom-ai-') ? 'ai' : code.startsWith('gen-') ? 'generic' : code.startsWith('custom-') ? 'manual' : /^\d{6,}$/.test(code) ? 'off' : '');
   const what = `${esc(item.name)}${item.brand ? ` · ${esc(item.brand)}` : ''}`;
   if (src === 'ai') return `Macros: ✨ Gemini’s estimate (no Open Food Facts match)`;
   if (src === 'generic') return `Macros from: ${what} <span class="muted">(basic foods)</span>`;
@@ -282,9 +300,9 @@ export async function renderMyRecipe(el, id) {
         ${storePicker(store)}
         <ul class="recipe-ingredients">${items.map((i, n) => `
           <li ${tintAttrs(i.per100)}>
-            <span class="info"><span>${esc(r.items[n].postName || i.name)}${!r.items[n].postName && i.brand ? ` <span class="muted small">· ${esc(i.brand)}</span>` : ''}</span>${r.items[n].buy && r.items[n].buy !== r.items[n].postName ? `<span class="small macro-src">Buy: <strong>${esc(r.items[n].buy)}</strong></span>` : ''}<span class="small macro-src">${macroSource(r.items[n])}</span><span class="small muted">${tx.said[n] ? `“${esc(tx.said[n])}” · ` : ''}${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
+            <span class="info"><span>${esc(r.items[n].postName || i.name)}${!r.items[n].postName && i.brand ? ` <span class="muted small">· ${esc(i.brand)}</span>` : ''}</span>${r.items[n].buy && r.items[n].buy !== r.items[n].postName ? `<span class="small to-buy">${icon('shopping-cart')}${esc(r.items[n].buy)}</span>` : ''}<span class="small macro-src">${macroSource(r.items[n])}</span><span class="small muted">${tx.said[n] ? `“${esc(tx.said[n])}” · ` : ''}${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
             <strong>${fmt(i.grams)} ${esc(i.unit)}</strong>
-            ${storeRow(store, r.items[n].shopName || i.name, n)}</li>`).join('')}
+            ${storeRow(store, r.items[n].shopName || i.name, n, `<button type="button" class="btn icon ghost ing-rm" data-rm="${n}" aria-label="Remove ${esc(r.items[n].postName || i.name)}">${icon('x')}</button>`)}</li>`).join('')}
         </ul>
         <p class="muted small">Amounts are for ${portions === 1 ? 'one portion' : `${portions} portions`}. “Quoted” text is what the post said for the whole recipe.</p>
       </section>
@@ -302,6 +320,13 @@ export async function renderMyRecipe(el, id) {
       // Swap the ingredient for the shop's product: its macros replace the old ones.
       onUse: async (n, p) => { await useProduct(r, n, p); per = myRecipeTotals(r); draw(); },
     });
+    $$('[data-rm]', el).forEach((b) => b.addEventListener('click', async () => {
+      const n = +b.dataset.rm;
+      if (!confirm(`Remove “${r.items[n].postName || r.items[n].name}” from this recipe?`)) return;
+      await removeIngredient(r, n);
+      per = myRecipeTotals(r);
+      draw();
+    }));
     $('#btn-log', el).addEventListener('click', async () => {
       const date = today();
       const meals = await db.mealsForDate(date);
