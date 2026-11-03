@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Today's steps from Health Connect (Android 14+), only after the user allows it -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <!-- Counting steps with the phone's own step sensor, like a step counter app -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
 
     <!-- Lets the widget see which apps open web links, to find the installed Macro Scanner -->
@@ -62,6 +67,20 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
+        </receiver>
+
+        <service
+            android:name=".StepService"
+            android:exported="false"
+            android:foregroundServiceType="health" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
 
         <service

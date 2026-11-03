@@ -24,13 +24,15 @@ public class MainActivity extends Activity {
 
     private LinearLayout box;
     private static final int ASK_STEPS = 7;
-    private boolean askedSteps;
+    private static final int ASK_SENSOR = 8;
+    private boolean askedSteps, askedSensor;
 
     @Override
     protected void onResume() {
         super.onResume();
         // Health Connect lets apps read while they're on screen, so update steps now.
-        if (Data.connected(this) && Steps.allowed(this)) refreshThenRender();
+        StepService.startIfEnabled(this);
+        if (Data.connected(this) && (Steps.allowed(this) || StepCounter.enabled(this))) refreshThenRender();
     }
 
     private void refreshThenRender() {
@@ -44,6 +46,11 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
         super.onRequestPermissionsResult(code, perms, results);
+        if (code == ASK_SENSOR) {
+            askedSensor = true;
+            if (StepService.permitted(this)) enableCounting(); else render();
+            return;
+        }
         if (code != ASK_STEPS) return;
         askedSteps = true;
         if (Steps.allowed(this)) refreshThenRender(); else render();
@@ -143,38 +150,63 @@ public class MainActivity extends Activity {
     private void stepsSection(Data.Today t) {
         TextView h = text("Steps");
         h.setTypeface(h.getTypeface(), android.graphics.Typeface.BOLD);
-        if (!Steps.supported()) {
-            text("Showing steps needs Android 14 or newer, where Health Connect is built in.");
-            return;
-        }
-        if (Steps.allowed(this)) {
-            text(t.steps >= 0
-                ? "Today: " + String.format(java.util.Locale.getDefault(), "%,d", t.steps) + " steps, from Health Connect. "
-                    + "They show on the widget and in Macro Scanner's diary."
-                : "Allowed. Steps appear after the next update.");
-            if (t.steps == 0) {
-                text("Health Connect has no steps for today yet. That usually means no app on this phone is "
-                    + "writing steps into Health Connect. Open Health Connect › App permissions, pick your step app "
-                    + "(e.g. StepsApp, Google Fit or Samsung Health) and allow it to write Steps, or turn on "
-                    + "Health Connect sync in that app's settings.");
+        String fmtSteps = String.format(java.util.Locale.getDefault(), "%,d", Math.max(0, t.steps));
+
+        // 1) The phone's own step sensor, like StepsApp.
+        if (!StepService.hasSensor(this)) {
+            text("This phone has no step sensor, so steps can only come from Health Connect.");
+        } else if (StepCounter.enabled(this) && StepService.permitted(this)) {
+            StepService.startIfEnabled(this);
+            text("Counting your steps with the phone’s step sensor. Today: " + fmtSteps + " steps. "
+                + "They show on the widget and in Macro Scanner’s diary. A silent notification stays while it counts.");
+            Button stop = button("Stop counting steps");
+            stop.setOnClickListener(v -> {
+                StepCounter.setEnabled(this, false);
+                StepService.stop(this);
+                MacroWidget.drawAll(this);
+                render();
+            });
+        } else {
+            text("Count your steps with the phone’s step sensor, the same way StepsApp does. Counting starts now, "
+                + "so today’s number begins from here; from tomorrow it’s the whole day. Steps are only saved in your "
+                + "own private GitHub gist, next to your backup.");
+            Button count = button("Count my steps");
+            count.setOnClickListener(v -> {
+                java.util.List<String> ask = new java.util.ArrayList<>();
+                if (Build.VERSION.SDK_INT >= 29) ask.add(android.Manifest.permission.ACTIVITY_RECOGNITION);
+                if (Build.VERSION.SDK_INT >= 33) ask.add(android.Manifest.permission.POST_NOTIFICATIONS);
+                if (ask.isEmpty()) { enableCounting(); return; }
+                requestPermissions(ask.toArray(new String[0]), ASK_SENSOR);
+            });
+            if (askedSensor && !StepService.permitted(this)) {
+                text("Android didn’t allow “Physical activity”. Allow it in App info › Permissions › Physical activity.");
+                Button info = button("Open app info");
+                info.setOnClickListener(v -> startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + getPackageName()))));
             }
+        }
+
+        // 2) Health Connect, for steps from a watch or fitness app.
+        if (!Steps.supported()) return;
+        if (Steps.allowed(this)) {
+            text("Health Connect is also allowed. If a watch or fitness app writes steps there, the higher number is used.");
             Button hcOpen = button("Open Health Connect");
             hcOpen.setOnClickListener(v -> openHealthConnect());
-            if (Build.VERSION.SDK_INT < 35) {
-                text("On Android 14 steps can only be read while this app is open, so the widget's step count updates "
-                    + "when you open Macro Widget.");
-            }
             return;
         }
-        text("Show today’s steps on the widget and in Macro Scanner. Health Connect adds up the steps from your phone, "
-            + "watch and fitness apps. They are only saved in your own private GitHub gist, next to your backup.");
-        Button allow = button("Show my steps");
+        Button allow = button("Also use Health Connect (watch, fitness apps)");
         allow.setOnClickListener(v -> requestPermissions(Steps.permissions(), ASK_STEPS));
         if (askedSteps) {
-            text("Nothing changed? Allow “Steps” for Macro Widget in Health Connect:");
             Button hc = button("Open Health Connect");
             hc.setOnClickListener(v -> openHealthConnect());
         }
+    }
+
+    private void enableCounting() {
+        StepCounter.setEnabled(this, true);
+        StepService.startIfEnabled(this);
+        MacroWidget.drawAll(this);
+        render();
     }
 
     private void openHealthConnect() {

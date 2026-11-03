@@ -63,6 +63,12 @@ final class Data {
             t.steps = p.getLong("steps", -1);
             t.stepsAt = p.getLong("stepsAt", 0);
         }
+        // The phone's own step sensor (if counting is on). Use whichever source saw more steps.
+        long counted = StepCounter.today(c);
+        if (counted > t.steps) {
+            t.steps = counted;
+            t.stepsAt = p.getLong("sc_at", 0);
+        }
         // A new day started since the last fetch: show zeros until we know better.
         if (t.date != null && !t.date.equals(LocalDate.now().toString())) {
             t.kcal = t.protein = t.carbs = t.fat = 0;
@@ -100,7 +106,7 @@ final class Data {
         String token = p.getString("token", null);
         String gist = p.getString("gist", null);
         if (token == null || gist == null) return;
-        long steps = readSteps(c);
+        long steps = Math.max(readSteps(c), StepCounter.today(c));
         try {
             JSONObject gistJson = new JSONObject(get("https://api.github.com/gists/" + gist, token));
             JSONObject backup = readBackup(gistJson, token);
