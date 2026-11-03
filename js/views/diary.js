@@ -114,7 +114,7 @@ export async function renderDiary(el, dateParam) {
         ${splitBar(day) || '<span class="muted">Nothing logged yet</span>'}
         <a href="#/goals">${hasGoals ? 'Edit goals' : 'Set goals'}</a>
       </div>
-      ${date === today() && goals.kcal > 0 && goals.kcal - day.kcal >= 250 ? `<a class="eat-link" href="#/eatout">🍔 Eat out: what fits ${fmt(goals.kcal - day.kcal, 'kcal')} kcal</a>` : ''}
+      ${date === today() && goals.kcal > 0 && goals.kcal - day.kcal >= 250 ? `<a class="eat-link" href="#/eatout">${icon('hamburger')} Eat out: what fits ${fmt(goals.kcal - day.kcal, 'kcal')} kcal</a>` : ''}
       ${steps !== null ? `<div class="steps-line">${icon('footprints')}<strong>${steps.toLocaleString()}</strong> steps${stepsTime ? `<span class="muted small">· updated ${stepsTime}</span>` : ''}</div>` : ''}
     </section>
 
