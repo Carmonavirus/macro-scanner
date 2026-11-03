@@ -58,7 +58,7 @@ export async function renderDiary(el, dateParam) {
       const items = meal.id === '_other' ? orphans : entries.filter((e) => e.meal === meal.id);
       const t = totals(items);
       return `
-      <section class="card meal${collapsed.has(meal.id) ? ' collapsed' : ''}" data-meal="${esc(meal.id)}">
+      <section ${tintAttrs(items.length ? t : null, `card meal${collapsed.has(meal.id) ? ' collapsed' : ''}`)} data-meal="${esc(meal.id)}">
         <div class="meal-head">
           <button type="button" class="meal-title meal-toggle" data-toggle="${esc(meal.id)}" aria-expanded="${!collapsed.has(meal.id)}">
             ${icon('chevron-down', { cls: 'meal-chev' })}

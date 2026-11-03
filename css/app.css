@@ -468,10 +468,19 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 /* Protein, carbs and fat each take the width of their share of the calories. */
 :root { --tint: 3px; }
 .history a.mx, .entries a.mx, .entries .swipe .swipe-row.mx, .recipe-ingredients li.mx {
-  background-image: linear-gradient(90deg, var(--protein) 0 var(--a), var(--carbs) var(--a) var(--b), var(--fat) var(--b) 100%);
+  /* Softer than the meal's own line, so the meal total stands out. */
+  --lp: color-mix(in srgb, var(--protein) 50%, var(--card));
+  --lc: color-mix(in srgb, var(--carbs) 50%, var(--card));
+  --lf: color-mix(in srgb, var(--fat) 50%, var(--card));
+  background-image: linear-gradient(90deg, var(--lp) 0 var(--a), var(--lc) var(--a) var(--b), var(--lf) var(--b) 100%);
   background-repeat: no-repeat; background-position: left bottom; background-size: 100% var(--tint);
 }
 .entries .swipe:has(.swipe-row.mx) { border-bottom-color: transparent; }
+/* The meal card gets the same line for the meal's total, a bit thicker so it reads as the sum. */
+.card.meal.mx {
+  background-image: linear-gradient(90deg, var(--protein) 0 var(--a), var(--carbs) var(--a) var(--b), var(--fat) var(--b) 100%);
+  background-repeat: no-repeat; background-position: left bottom; background-size: 100% calc(var(--tint) * 1.5);
+}
 .recipe-ingredients li.mx { border-bottom-color: transparent; }
 .tint-preview { border-top: none; margin-top: 4px; }
 .tint-preview li { margin-bottom: 4px; }
