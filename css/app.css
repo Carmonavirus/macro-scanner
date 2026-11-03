@@ -612,3 +612,4 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .import-review .import-serv input { width: 72px; }
 .import-review p { margin: 0; }
 .import-source { margin-bottom: 12px; text-decoration: none; }
+.lang-toggle { margin: 0 0 12px; }

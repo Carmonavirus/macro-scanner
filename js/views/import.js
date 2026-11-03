@@ -12,8 +12,12 @@ import { renderAiCard } from './voice.js';
 import { addToShoppingList } from './shopping.js';
 import {
   readRecipe, toDraft, saveDraft, cleanLink, textWithoutLink, MAX_MEDIA_BYTES,
-  myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName,
+  myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName, isTranslated, languageName, texts,
 } from '../social.js';
+
+// Show the translation (English) or the post's own language; remembered while the app is open.
+const view = { original: false };
+const langToggle = (r) => (isTranslated(r) ? `<button class="btn small with-ic lang-toggle" id="btn-lang" type="button">${icon('languages')} ${view.original ? 'Show English' : `Show original (${esc(languageName(r.lang))})`}</button>` : '');
 
 const SHARE_KEY = 'sharedPost';   // sessionStorage: { link, text } from Android's share menu
 const macroLine = (t) => `${fmt(t.kcal, 'kcal')} kcal · P ${fmt(t.protein)} · C ${fmt(t.carbs)} · F ${fmt(t.fat)}`;
@@ -132,10 +136,12 @@ function drawDraft(out, d) {
     const ok = d.ingredients.filter(pickOf);
     const t = ok.map(amount).reduce((a, b) => ({ kcal: a.kcal + b.kcal, protein: a.protein + b.protein, carbs: a.carbs + b.carbs, fat: a.fat + b.fat }), { kcal: 0, protein: 0, carbs: 0, fat: 0 });
     const per = { kcal: t.kcal / d.servings, protein: t.protein / d.servings, carbs: t.carbs / d.servings, fat: t.fat / d.servings };
+    const tx = texts(d, view.original);
     out.innerHTML = `
       <h2 class="section-title">Check the recipe</h2>
+      ${langToggle(d)}
       <section class="card import-review">
-        <label>Name <input id="d-title" value="${esc(d.title)}"></label>
+        <label>Name <input id="d-title" value="${esc(tx.title)}"${view.original ? ' readonly' : ''}></label>
         <label class="import-serv">Makes <input id="d-serv" type="number" inputmode="numeric" min="1" max="20" value="${d.servings}"> portions</label>
         <p class="voice-total"><strong>Per portion: ${fmt(per.kcal, 'kcal')} kcal</strong> · P ${fmt(per.protein)} · C ${fmt(per.carbs)} · F ${fmt(per.fat)}</p>
         ${d.notes ? `<p class="notice small">${esc(d.notes)}</p>` : ''}
@@ -145,7 +151,7 @@ function drawDraft(out, d) {
         const p = pickOf(it);
         const a = amount(it);
         return `<li ${p ? tintAttrs(p.per100, 'voice-item') : 'class="voice-item"'}>
-          <div class="voice-said muted small">“${esc(it.said)}”</div>
+          <div class="voice-said muted small">“${esc(tx.said[i])}”</div>
           <div class="voice-row">
             <select data-pick="${i}" aria-label="Food for ${esc(it.said)}">
               ${it.choices.map((c, j) => `<option value="${j}"${j === it.pick ? ' selected' : ''}>${esc(label(c))}</option>`).join('')}
@@ -158,12 +164,13 @@ function drawDraft(out, d) {
       }).join('')}</ul>
       <section class="card">
         <h3 class="card-title">Method</h3>
-        <ol class="steps">${d.steps.map((s) => `<li>${esc(s)}</li>`).join('') || '<li class="muted">No steps in the post.</li>'}</ol>
+        <ol class="steps">${tx.steps.map((s) => `<li>${esc(s)}</li>`).join('') || '<li class="muted">No steps in the post.</li>'}</ol>
       </section>
       <button class="btn primary big with-ic" id="d-save">${icon('bookmark-plus')} Save recipe</button>
       <p class="muted small">✨ = Gemini’s estimate, because nothing in your foods or the basic foods matched. Amounts from a video are estimates, so check them.</p>`;
 
-    $('#d-title', out).addEventListener('change', (e) => { d.title = e.target.value.trim() || d.title; });
+    $('#btn-lang', out)?.addEventListener('click', () => { view.original = !view.original; draw(); });
+    $('#d-title', out).addEventListener('change', (e) => { if (!view.original) d.title = e.target.value.trim() || d.title; });
     $('#d-serv', out).addEventListener('change', (e) => { d.servings = Math.max(1, Math.min(20, Math.round(+e.target.value) || 1)); draw(); });
     $$('[data-pick]', out).forEach((s) => s.addEventListener('change', () => { d.ingredients[+s.dataset.pick].pick = +s.value; draw(); }));
     $$('[data-g]', out).forEach((inp) => inp.addEventListener('change', () => {
@@ -173,7 +180,7 @@ function drawDraft(out, d) {
     }));
     $('#d-save', out).addEventListener('click', async (e) => {
       e.currentTarget.disabled = true;
-      d.title = $('#d-title', out).value.trim() || d.title;
+      if (!view.original) d.title = $('#d-title', out).value.trim() || d.title;
       const r = await saveDraft(d);
       toast('Recipe saved under My recipes');
       location.hash = `#/myrecipe/${r.id}`;
@@ -191,12 +198,14 @@ export async function renderMyRecipe(el, id) {
   const draw = () => {
     const items = myRecipeItems(r, portions);
     const t = { kcal: per.kcal * portions, protein: per.protein * portions, carbs: per.carbs * portions, fat: per.fat * portions };
+    const tx = texts(r, view.original);
     el.innerHTML = `
       <div class="product-head">
         <div class="product-img placeholder">${icon('chef-hat')}</div>
-        <div><h2>${esc(r.name)}</h2>
+        <div><h2>${esc(tx.title)}</h2>
           <p class="muted small with-ic">${r.minutes ? `${icon('clock')} ${r.minutes} min · ` : ''}makes ${r.servings} portion${r.servings === 1 ? '' : 's'}</p></div>
       </div>
+      ${langToggle(r)}
       ${r.link ? `<a class="btn with-ic import-source" href="${esc(r.link)}" target="_blank" rel="noopener">${icon('external-link')} Original post on ${esc(sourceName(r.link))}</a>` : ''}
       <div class="row-between recipe-portions">
         <span>${portions === 1 ? '1 portion' : `${portions} portions`}</span>
@@ -221,19 +230,20 @@ export async function renderMyRecipe(el, id) {
         <h3 class="card-title">Ingredients</h3>
         <ul class="recipe-ingredients">${items.map((i, n) => `
           <li ${tintAttrs(i.per100)}>
-            <span class="info"><span>${esc(i.name)}</span><span class="small muted">${r.items[n].said ? `“${esc(r.items[n].said)}” · ` : ''}${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
+            <span class="info"><span>${esc(i.name)}</span><span class="small muted">${tx.said[n] ? `“${esc(tx.said[n])}” · ` : ''}${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
             <strong>${fmt(i.grams)} ${esc(i.unit)}</strong></li>`).join('')}
         </ul>
         <p class="muted small">Amounts are for ${portions === 1 ? 'one portion' : `${portions} portions`}. “Quoted” text is what the post said for the whole recipe.</p>
       </section>
       <section class="card">
         <h3 class="card-title">Method</h3>
-        <ol class="steps">${r.steps.map((s) => `<li>${esc(s)}</li>`).join('') || '<li class="muted">No steps.</li>'}</ol>
+        <ol class="steps">${tx.steps.map((s) => `<li>${esc(s)}</li>`).join('') || '<li class="muted">No steps.</li>'}</ol>
       </section>
       <button class="btn ghost with-ic" id="btn-del">${icon('trash-2')} Delete recipe</button>`;
 
     $('[data-dec]', el).addEventListener('click', () => { portions = Math.max(1, portions - 1); draw(); });
     $('[data-inc]', el).addEventListener('click', () => { portions = Math.min(20, portions + 1); draw(); });
+    $('#btn-lang', el)?.addEventListener('click', () => { view.original = !view.original; draw(); });
     $('#btn-log', el).addEventListener('click', async () => {
       const date = today();
       const meals = await db.mealsForDate(date);
