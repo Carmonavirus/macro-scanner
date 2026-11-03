@@ -33,8 +33,8 @@ Return JSON:
   - "optional": true when the post calls it optional, a side or "nach Wahl/optional", otherwise false
   - "grams": the amount in grams (ml for liquids) for the whole recipe; convert spoons, cups, pieces etc. to a typical weight; if no amount is given, estimate what was used
   - "per100": kcal, protein, carbs (without fibre) and fat per 100 g as used. For a brand product use that product's real label values if you know them
-- "steps": the method as short, clear steps in English. If the post doesn't say, work out sensible steps from what is shown.
-- "stepsOriginal": the same steps in the post's own language (the same text as "steps" if the post is in English)
+- "steps": the method as short, clear steps in English, in your own words. If the post doesn't say, work out sensible steps from what is shown.
+- "stepsOriginal": the same short steps in the post's own language, also in your own words, not copied (the same text as "steps" if the post is in English)
 - "stated": the nutrition per portion when the post states it (e.g. "Nährwerte p.P.: 483 kcal, 26 g KH, 14 g F, 63 g EW"), as kcal, protein, carbs and fat; all 0 when the post doesn't state it. Say in "statedFor" what it covers if the post says, e.g. "without rice", otherwise ""
 - "notes": anything uncertain, in one short English sentence, or ""
 Never leave out an ingredient that has calories, and never replace one food with a different one. Skip only salt, pepper, water and spices without calories. If there is no recipe at all, return an empty "ingredients" list.`;
@@ -60,7 +60,7 @@ const SCHEMA = {
             required: ['kcal', 'protein', 'carbs', 'fat'],
           },
         },
-        required: ['said', 'name', 'de', 'en', 'grams', 'per100'],
+        required: ['said', 'saidEn', 'name', 'buy', 'brand', 'product', 'de', 'en', 'optional', 'grams', 'per100'],
       },
     },
     steps: { type: 'ARRAY', items: { type: 'STRING' } },
@@ -68,11 +68,12 @@ const SCHEMA = {
     stated: {
       type: 'OBJECT',
       properties: { kcal: { type: 'NUMBER' }, protein: { type: 'NUMBER' }, carbs: { type: 'NUMBER' }, fat: { type: 'NUMBER' } },
+      required: ['kcal', 'protein', 'carbs', 'fat'],
     },
     statedFor: { type: 'STRING' },
     notes: { type: 'STRING' },
   },
-  required: ['language', 'title', 'titleOriginal', 'servings', 'ingredients', 'steps', 'stepsOriginal'],
+  required: ['language', 'title', 'titleOriginal', 'servings', 'minutes', 'ingredients', 'steps', 'stepsOriginal', 'stated', 'statedFor', 'notes'],
 };
 
 const toBase64 = (file) => new Promise((resolve, reject) => {

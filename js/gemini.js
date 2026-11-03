@@ -16,6 +16,25 @@ async function errorText(res) {
   try { return (await res.json())?.error?.message || ''; } catch { return ''; }
 }
 
+/** Gemini's JSON text, also when it comes wrapped in ```json fences or with text around it. */
+export function parseJson(text) {
+  const t = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  try { return JSON.parse(t); } catch { /* try the outermost object */ }
+  const a = t.indexOf('{');
+  const b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch { /* unreadable */ } }
+  return undefined;
+}
+
+// Why an answer had no readable JSON, in words.
+const WHY = {
+  MAX_TOKENS: 'the answer got cut off',
+  SAFETY: 'Google’s safety filter blocked it',
+  RECITATION: 'Google blocked it for quoting the post too closely',
+  PROHIBITED_CONTENT: 'Google blocked it',
+  BLOCKLIST: 'Google blocked it',
+};
+
 const isBadKey = (status, msg) => (status === 400 || status === 401 || status === 403) && /api key|permission|unauthori[sz]ed|forbidden/i.test(msg);
 
 /**
@@ -24,6 +43,7 @@ const isBadKey = (status, msg) => (status === 400 || status === 401 || status ==
  */
 export async function generateJson(key, parts, schema, { temperature = 0.1, onRetry } = {}) {
   let busy = false;
+  let unreadable = '';
   for (const model of MODELS) {
     for (let attempt = 0; attempt < 2; attempt++) {
       let res;
@@ -33,16 +53,25 @@ export async function generateJson(key, parts, schema, { temperature = 0.1, onRe
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
-            generationConfig: { responseMimeType: 'application/json', responseSchema: schema, temperature },
+            // A second try gets a little more variety, which gets it out of a loop that never ends.
+            generationConfig: { responseMimeType: 'application/json', responseSchema: schema, maxOutputTokens: 16384, temperature: attempt ? Math.max(temperature, 0.5) : temperature },
           }),
         });
       } catch {
         throw new GeminiError('Couldn’t reach Google Gemini. Check your internet connection.');
       }
       if (res.ok) {
-        const data = await res.json();
-        const out = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
-        try { return JSON.parse(out); } catch { throw new GeminiError('Gemini’s answer couldn’t be read. Try again.'); }
+        let data = null;
+        try { data = await res.json(); } catch { /* unreadable */ }
+        const cand = data?.candidates?.[0];
+        const out = (cand?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
+        const json = parseJson(out);
+        if (json !== undefined) return json;
+        // Empty, cut off or blocked: try once more, then the next model.
+        const reason = cand?.finishReason || data?.promptFeedback?.blockReason || '';
+        unreadable = WHY[reason] || (out ? 'it wasn’t valid JSON' : 'it was empty');
+        onRetry?.();
+        continue;
       }
       if (res.status === 404) break;                     // model not offered to this key: next one
       const msg = await errorText(res);
@@ -55,6 +84,7 @@ export async function generateJson(key, parts, schema, { temperature = 0.1, onRe
       if (attempt === 0) await wait(1500);
     }
   }
+  if (unreadable) throw new GeminiError(`Gemini’s answer couldn’t be read (${unreadable}). Try again, or add the caption as text.`);
   throw new GeminiError(busy
     ? 'Google Gemini is very busy right now. Try again in a minute or two.'
     : 'No Gemini model is available for this key.', { busy });
