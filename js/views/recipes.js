@@ -12,6 +12,7 @@ import {
   MEALDB_CATEGORIES, mealdbCategory, mealdbSearch, mealdbMeal,
 } from '../recipes.js';
 import { addToShoppingList } from './shopping.js';
+import { getMyRecipes, myRecipeTotals, sourceName } from '../social.js';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -27,10 +28,22 @@ const state = { filter: 'all', cat: null, query: '' };
 const macroLine = (t) => `${fmt(t.kcal, 'kcal')} kcal · P ${fmt(t.protein)} · C ${fmt(t.carbs)} · F ${fmt(t.fat)}`;
 
 // ---------- List ----------
-export function renderRecipes(el) {
+export async function renderRecipes(el) {
+  const mine = await getMyRecipes();
   el.innerHTML = `
     <a class="card eat-cta" href="#/eatout"><span class="thumb" aria-hidden="true">${icon('hamburger')}</span>
       <span class="info"><strong>No time to cook? Eat out</strong><span class="small muted">Dishes from McDonald’s, Burger King, KFC, Subway and dean&amp;david that fit what’s left today</span></span>${icon('chevron-right')}</a>
+    <a class="card eat-cta" href="#/import"><span class="thumb" aria-hidden="true">${icon('chef-hat')}</span>
+      <span class="info"><strong>Recipe from Instagram</strong><span class="small muted">Paste or share a reel or post and get the ingredients, macros and steps</span></span>${icon('chevron-right')}</a>
+    ${mine.length ? `<h2 class="section-title with-ic recipe-sec">${icon('bookmark')} My recipes</h2>
+    <ul class="history recipe-list">${mine.map((r) => { const t = myRecipeTotals(r); return `
+      <li><a href="#/myrecipe/${esc(r.id)}">
+        <span class="thumb">${icon('chef-hat')}</span>
+        <span class="info"><strong>${esc(r.name)}</strong>
+          <span class="small muted">${fmt(t.kcal, 'kcal')} kcal per portion${r.link ? ` · ${esc(sourceName(r.link))}` : ''}</span></span>
+        <span class="recipe-protein"><b>${fmt(t.protein)} g</b><small>protein</small></span>
+      </a></li>`; }).join('')}</ul>
+    <h2 class="section-title recipe-sec">Recipes</h2>` : ''}
     <p class="hint">High-protein recipes with macros worked out per portion. Log them, save them as a meal or put the ingredients on your shopping list.</p>
     <div class="chips recipe-filters">${FILTERS.map((f) => `<button class="chip${state.filter === f.id ? ' active' : ''}" data-filter="${esc(f.id)}">${esc(f.label)}</button>`).join('')}</div>
     <ul class="history recipe-list" id="recipe-list"></ul>

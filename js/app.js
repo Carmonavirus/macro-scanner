@@ -26,6 +26,7 @@ import { renderShopping } from './views/shopping.js';
 import { renderRecipes, renderRecipe, renderMealdbRecipe } from './views/recipes.js';
 import { renderEatOut } from './views/eatout.js';
 import { renderVoice } from './views/voice.js';
+import { renderImport, renderMyRecipe, takeShare } from './views/import.js';
 import { syncThemeFromDb } from './theme.js';
 import { icon } from './icons.js';
 import { startAutoSync, requestPersistence } from './sync.js';
@@ -63,6 +64,8 @@ const ROUTES = {
   mealdb: { tab: 'recipes', title: 'Recipe', render: ([id]) => renderMealdbRecipe(view, id) },
   recipe: { tab: 'recipes', title: 'Recipe', render: ([id]) => renderRecipe(view, id) },
   eatout: { tab: 'recipes', title: 'Eat out', render: () => renderEatOut(view) },
+  import: { tab: 'recipes', title: 'Recipe from a post', render: () => renderImport(view) },
+  myrecipe: { tab: 'recipes', title: 'My recipe', render: ([id]) => renderMyRecipe(view, id) },
   shopping: { tab: 'shopping', title: 'Shopping list', root: true, render: () => renderShopping(view) },
   colours: { tab: 'more', title: 'Colours', render: () => renderColours(view) },
   supplements: { tab: 'diary', title: 'My supplements', render: () => renderSupplements(view) },
@@ -108,6 +111,7 @@ document.addEventListener('click', (e) => {
 
 back.addEventListener('click', () => (depth() > 0 ? history.back() : go('#/', { replace: true })));
 
+takeShare();   // a post shared to the app from Instagram etc.
 if (!history.state) history.replaceState({ depth: 0 }, '', location.hash || '#/');
 route();
 
