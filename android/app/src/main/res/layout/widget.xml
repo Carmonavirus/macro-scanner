@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root"
     android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Card behind everything; its colour and see-through level come from the widget settings -->
+    <ImageView
+        android:id="@+id/bg"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="fitXY"
+        android:src="@drawable/bg" />
+
+<LinearLayout
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg"
     android:orientation="vertical"
     android:padding="12dp">
 
@@ -57,6 +69,7 @@
         android:progressDrawable="@drawable/bar_kcal" />
 
     <LinearLayout
+        android:id="@+id/tiles"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
@@ -202,6 +215,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/foot"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
@@ -228,3 +242,4 @@
             android:textSize="11sp" />
     </LinearLayout>
 </LinearLayout>
+</FrameLayout>
