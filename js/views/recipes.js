@@ -172,7 +172,7 @@ export async function renderRecipe(el, id) {
 
     $('[data-dec]', el).addEventListener('click', () => { portions = Math.max(1, portions - 1); draw(); });
     $('[data-inc]', el).addEventListener('click', () => { portions = Math.min(8, portions + 1); draw(); });
-    bindStores(el, items.map((i) => i.name), { onStore: async () => { store = await getStore(); draw(); } });
+    bindStores(el, items.map((i) => ({ name: i.name, per100: i.per100 })), { onStore: async () => { store = await getStore(); draw(); } });
     const label = portions > 1 ? `${r.name} ×${portions}` : r.name;
 
     $('#btn-log', el).addEventListener('click', async () => {
