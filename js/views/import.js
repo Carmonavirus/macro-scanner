@@ -154,7 +154,7 @@ function drawDraft(out, d) {
         const p = pickOf(it);
         const a = amount(it);
         return `<li ${p ? tintAttrs(p.per100, 'voice-item') : 'class="voice-item"'}>
-          ${it.postName ? `<div class="voice-name"><strong>${esc(it.postName)}</strong></div>` : ''}
+          ${it.postName ? `<div class="voice-name"><strong>${esc(it.postName)}</strong>${it.buy && it.buy !== it.postName ? ` <span class="small muted">· buy: ${esc(it.buy)}</span>` : ''}</div>` : ''}
           <div class="voice-said muted small">“${esc(tx.said[i])}”${it.optional ? ' <b class="imp-tag">Optional</b>' : ''}</div>
           <div class="voice-row">
             <select data-pick="${i}" aria-label="Food for ${esc(it.said)}">
@@ -228,6 +228,17 @@ function statedLine(per, d) {
     : ' · close to ours ✓'}</p>`;
 }
 
+/** Where an ingredient's macros come from: an Open Food Facts product, the basic foods, your own food or Gemini. */
+function macroSource(item) {
+  const code = String(item.code || '');
+  const src = item.src || (code.startsWith('custom-ai-') ? 'ai' : code.startsWith('generic-') ? 'generic' : code.startsWith('custom-') ? 'manual' : /^\d{6,}$/.test(code) ? 'off' : '');
+  const what = `${esc(item.name)}${item.brand ? ` · ${esc(item.brand)}` : ''}`;
+  if (src === 'ai') return `Macros: ✨ Gemini’s estimate (no Open Food Facts match)`;
+  if (src === 'generic') return `Macros from: ${what} <span class="muted">(basic foods)</span>`;
+  if (src === 'off') return `Macros from: ${what} <span class="muted">(Open Food Facts)</span>`;
+  return `Macros from: ${what} <span class="muted">(your foods)</span>`;
+}
+
 // ---------- One of my recipes ----------
 export async function renderMyRecipe(el, id) {
   const r = await myRecipeById(id);
@@ -271,7 +282,7 @@ export async function renderMyRecipe(el, id) {
         ${storePicker(store)}
         <ul class="recipe-ingredients">${items.map((i, n) => `
           <li ${tintAttrs(i.per100)}>
-            <span class="info"><span>${esc(r.items[n].postName || i.name)}${!r.items[n].postName && i.brand ? ` <span class="muted small">· ${esc(i.brand)}</span>` : ''}</span>${r.items[n].postName && r.items[n].postName !== i.name ? `<span class="small muted">Macros from: ${esc(i.name)}${i.brand ? ` · ${esc(i.brand)}` : ''}</span>` : ''}<span class="small muted">${tx.said[n] ? `“${esc(tx.said[n])}” · ` : ''}${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
+            <span class="info"><span>${esc(r.items[n].postName || i.name)}${!r.items[n].postName && i.brand ? ` <span class="muted small">· ${esc(i.brand)}</span>` : ''}</span>${r.items[n].buy && r.items[n].buy !== r.items[n].postName ? `<span class="small macro-src">Buy: <strong>${esc(r.items[n].buy)}</strong></span>` : ''}<span class="small macro-src">${macroSource(r.items[n])}</span><span class="small muted">${tx.said[n] ? `“${esc(tx.said[n])}” · ` : ''}${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
             <strong>${fmt(i.grams)} ${esc(i.unit)}</strong>
             ${storeRow(store, r.items[n].shopName || i.name, n)}</li>`).join('')}
         </ul>

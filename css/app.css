@@ -643,3 +643,4 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .import-review .stated { color: var(--muted); }
 .import-review .stated.off { color: var(--error); }
 .import-review .stated .ic, .import-review .stated svg { width: 14px; height: 14px; vertical-align: -2px; }
+.recipe-ingredients .macro-src { color: var(--text); opacity: .8; }
