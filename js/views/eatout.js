@@ -6,11 +6,12 @@ import { totals, fmt, tintAttrs } from '../nutrition.js';
 import { $, $$, esc, toast, actionSheet } from '../ui.js';
 import { icon } from '../icons.js';
 import { today } from '../dates.js';
-import { CHAINS, CHAINS_CHECKED, chainById, suggest, dishItem, partsLabel } from '../chains.js';
+import { CHAINS, CHAINS_CHECKED, chainById, suggest, dishItem, partsLabel, SORTS } from '../chains.js';
 
 const CUSTOM_KEY = 'eatOutCustom';
 const MEAL_MAX = 1200;
-const state = { chain: 'all' };
+const state = { chain: 'all', sort: 'fit' };
+const euro = (v) => v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 
 const line = (t) => `${fmt(t.kcal, 'kcal')} kcal · P ${fmt(t.protein)} · C ${fmt(t.carbs)} · F ${fmt(t.fat)}`;
 const badge = (c) => `<span class="chain-badge" style="--chain:${c.color}" aria-hidden="true">${esc(c.badge)}</span>`;
@@ -45,8 +46,11 @@ export async function renderEatOut(el) {
       <button class="chip${state.chain === 'all' ? ' active' : ''}" data-chain="all">All</button>
       ${chainIds.map((id) => { const c = chainById(id); return `<button class="chip${state.chain === id ? ' active' : ''}" data-chain="${id}">${esc(id === 'own' ? 'My dishes' : c.name)}</button>`; }).join('')}
     </div>
+    <label class="eat-sort">Order by
+      <select id="eat-sort">${SORTS.map((o) => `<option value="${o.id}"${state.sort === o.id ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select>
+    </label>
     <ul class="history eat-list" id="eat-list"></ul>
-    <p class="hint small">Values per portion as sold in Germany, checked ${esc(checked)}. They’re close but not exact, and limited-time specials aren’t in the list. For a special, check its numbers in the chain’s app and add it below.</p>
+    <p class="hint small">Values per portion as sold in Germany, checked ${esc(checked)}. Prices are typical single-item prices in Germany; they vary by restaurant and are usually higher on delivery apps. Macros are close but not exact, and limited-time specials aren’t in the list. For a special, check its numbers in the chain’s app and add it below.</p>
 
     <details class="card eat-own">
       <summary class="with-ic">${icon('plus')} Add a dish yourself <span class="muted small">(${custom.length})</span></summary>
@@ -60,6 +64,7 @@ export async function renderEatOut(el) {
           <label>Protein g <input name="protein" type="number" inputmode="decimal" min="0" step="any" required></label>
           <label>Carbs g <input name="carbs" type="number" inputmode="decimal" min="0" step="any" required></label>
           <label>Fat g <input name="fat" type="number" inputmode="decimal" min="0" step="any" required></label>
+          <label>Price € <input name="price" type="number" inputmode="decimal" min="0" step="any" placeholder="optional"></label>
         </div>
         <button class="btn primary" type="submit">Save dish</button>
       </form>
@@ -76,7 +81,7 @@ export async function renderEatOut(el) {
       list.innerHTML = '<li class="empty">Less than 100 kcal left today, so nothing fits.</li>';
       return;
     }
-    shown = suggest(target, { chains, extra });
+    shown = suggest(target, { chains, extra, sort: state.sort });
     list.innerHTML = shown.map((o, i) => {
       const c = chainById(o.chain);
       const after = left.kcal - o.kcal;
@@ -84,13 +89,15 @@ export async function renderEatOut(el) {
         ${badge(c)}
         <span class="info"><strong>${esc(partsLabel(o.parts))}</strong>
           <span class="small muted">${esc(c.name)} · ${line(o)}</span>
-          <span class="small eat-after">${i === 0 ? '<b>Best fit</b> · ' : ''}${after >= 0 ? `${fmt(after, 'kcal')} kcal left after` : `${fmt(-after, 'kcal')} kcal over`}</span></span>
+          <span class="small eat-after">${o.price != null ? `<b class="eat-price">≈ ${euro(o.price)}</b> · ` : ''}${i === 0 && state.sort === 'fit' ? '<b>Best fit</b> · ' : ''}${after >= 0 ? `${fmt(after, 'kcal')} kcal left after` : `${fmt(-after, 'kcal')} kcal over`}</span>
+          ${c.site ? `<span class="small eat-links"><a href="${esc(c.site)}" target="_blank" rel="noopener">${esc(c.name)} website ↗</a> · <a href="${esc(c.nutritionSrc)}" target="_blank" rel="noopener">nutrition ↗</a> · <a href="${esc(c.priceSrc)}" target="_blank" rel="noopener">prices ↗</a></span>` : ''}</span>
         <button class="btn icon" data-log="${i}" aria-label="Add to today">${icon('plus')}</button>
       </div></li>`;
     }).join('') || '<li class="empty">Nothing here fits what’s left today.</li>';
   };
   draw();
 
+  $('#eat-sort', el).addEventListener('change', (e) => { state.sort = e.target.value; draw(); });
   $$('[data-chain]', el).forEach((b) => b.addEventListener('click', () => {
     state.chain = b.dataset.chain;
     $$('[data-chain]', el).forEach((x) => x.classList.toggle('active', x === b));
@@ -116,6 +123,7 @@ export async function renderEatOut(el) {
     const d = {
       id: `own-${Date.now().toString(36)}`, chain: f.get('chain'), name: String(f.get('name')).trim(),
       grams: 100, kcal: num('kcal'), protein: num('protein'), carbs: num('carbs'), fat: num('fat'),
+      price: f.get('price') ? num('price') : null,
     };
     if (!d.name) return;
     await db.setSetting(CUSTOM_KEY, [...custom, d]);
