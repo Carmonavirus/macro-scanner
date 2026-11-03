@@ -10,7 +10,7 @@ export const CHAINS_CHECKED = '2026-11-03';
 
 const RAW = {
   mcd: {
-    name: "McDonald's", emoji: '🍔',
+    badge: 'McD', color: '#da291c', name: "McDonald's", emoji: '🍔',
     dishes: [
       ['Hamburger', 100, 253, 13, 30, 8.8, 'm'],
       ['Cheeseburger', 114, 302, 16, 31, 13, 'm'],
@@ -38,7 +38,7 @@ const RAW = {
     ],
   },
   bk: {
-    name: 'Burger King', emoji: '👑',
+    badge: 'BK', color: '#f28c00', name: 'Burger King', emoji: '👑',
     dishes: [
       ['Whopper', 282, 613, 28, 49, 33, 'm'],
       ['Whopper Jr.', 145, 315, 14, 28, 16, 'm'],
@@ -60,7 +60,7 @@ const RAW = {
     ],
   },
   kfc: {
-    name: 'KFC', emoji: '🍗',
+    badge: 'KFC', color: '#c8102e', name: 'KFC', emoji: '🍗',
     dishes: [
       ['Original Chicken breast piece', 110, 234, 24, 8, 12, 'm'],
       ['2 Original Chicken pieces (breast + drumstick)', 162, 356, 34, 12, 19.5, 'm'],
@@ -79,7 +79,7 @@ const RAW = {
     ],
   },
   subway: {
-    name: 'Subway', emoji: '🥖',
+    badge: 'SUB', color: '#008c3a', name: 'Subway', emoji: '🥖',
     dishes: [
       ['Chicken Teriyaki Sub 15 cm', 226, 307, 23, 41, 5, 'm'],
       ['Chicken Teriyaki Sub Footlong', 452, 614, 46, 82, 10, 'm'],
@@ -100,7 +100,7 @@ const RAW = {
     ],
   },
   dd: {
-    name: 'dean&david', emoji: '🥗',
+    badge: 'd&d', color: '#2b2b2b', name: 'dean&david', emoji: '🥗',
     dishes: [
       ['Avocado Chicken Bowl', 400, 571, 35, 40, 29, 'm'],
       ['Chicken Teriyaki Bowl', 450, 713, 38, 90, 22, 'm'],
@@ -114,8 +114,9 @@ const RAW = {
   },
 };
 
-export const CHAINS = Object.entries(RAW).map(([id, c]) => ({ id, name: c.name, emoji: c.emoji }));
-export const chainById = (id) => CHAINS.find((c) => c.id === id) || { id, name: id, emoji: '🍽️' };
+// Plain text badges (initials in a colour), not logos: those are the chains' trademarks.
+export const CHAINS = Object.entries(RAW).map(([id, c]) => ({ id, name: c.name, emoji: c.emoji, badge: c.badge, color: c.color }));
+export const chainById = (id) => CHAINS.find((c) => c.id === id) || { id, name: id === 'own' ? 'My dish' : id, emoji: '⭐', badge: '★', color: '#6b6b6b' };
 
 const slug = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 

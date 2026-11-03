@@ -6,6 +6,7 @@ import { today } from '../dates.js';
 import * as sync from '../sync.js';
 import { icon } from '../icons.js';
 import { renderHevyCard } from './hevy.js';
+import { renderAiCard } from './voice.js';
 
 // ---------- Install (Add to Home screen) ----------
 let deferredPrompt = null;
@@ -90,6 +91,8 @@ export function renderMore(el) {
 
     <section class="card" id="hevy"></section>
 
+    <section class="card" id="ai"></section>
+
     <section class="card">
       <h2 class="card-title">Backup file</h2>
       <p class="muted">Save a copy of everything as a file, or restore one. Handy if you ever stop using cloud backup.</p>
@@ -108,6 +111,7 @@ export function renderMore(el) {
 
   renderCloud($('#cloud', el));
   renderHevyCard($('#hevy', el));
+  renderAiCard($('#ai', el));
 
   $('#btn-export', el).addEventListener('click', async () => {
     const data = await db.exportAll();
