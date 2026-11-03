@@ -11,6 +11,11 @@ import { workoutsCard } from './hevy.js';
 import { icon } from '../icons.js';
 import { stepsOn, stepsUpdatedAt, refreshSteps } from '../steps.js';
 
+// Meals folded shut by the user (by meal id, e.g. "breakfast"), remembered on this phone.
+const COLLAPSED_KEY = 'collapsedMeals';
+const getCollapsed = () => { try { return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY)) || []); } catch { return new Set(); } };
+const setCollapsed = (set) => { try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set])); } catch { /* ignore */ } };
+
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
   const [meals, entries, goals, supps, workouts] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals(), supplementsCard(date), workoutsCard(date)]);
@@ -22,6 +27,7 @@ export async function renderDiary(el, dateParam) {
   if (date === today()) refreshSteps();
 
   // Entries whose meal no longer exists (shouldn't happen, but never hide food)
+  const collapsed = getCollapsed();
   const known = new Set(meals.map((m) => m.id));
   const orphans = entries.filter((e) => !known.has(e.meal));
   const allMeals = orphans.length ? [...meals, { id: '_other', name: 'Other' }] : meals;
@@ -52,12 +58,13 @@ export async function renderDiary(el, dateParam) {
       const items = meal.id === '_other' ? orphans : entries.filter((e) => e.meal === meal.id);
       const t = totals(items);
       return `
-      <section class="card meal" data-meal="${esc(meal.id)}">
+      <section class="card meal${collapsed.has(meal.id) ? ' collapsed' : ''}" data-meal="${esc(meal.id)}">
         <div class="meal-head">
-          <div class="meal-title">
-            <h2>${esc(meal.name)}</h2>
-            <p class="muted small">${items.length ? pmf(t) : 'Nothing yet'}</p>
-          </div>
+          <button type="button" class="meal-title meal-toggle" data-toggle="${esc(meal.id)}" aria-expanded="${!collapsed.has(meal.id)}">
+            ${icon('chevron-down', { cls: 'meal-chev' })}
+            <span class="meal-name"><h2>${esc(meal.name)}</h2>
+            <p class="muted small">${items.length ? `${pmf(t)}<span class="meal-count"> · ${items.length} item${items.length === 1 ? '' : 's'}</span>` : 'Nothing yet'}</p></span>
+          </button>
           ${items.length ? `<span class="meal-kcal">${fmt(t.kcal, 'kcal')}<small> kcal</small></span>` : ''}
           ${meal.id === '_other' ? '' : `<button class="btn icon ghost" data-meal-menu="${esc(meal.id)}" aria-label="Meal options">${icon('ellipsis')}</button>`}
         </div>
@@ -83,6 +90,15 @@ export async function renderDiary(el, dateParam) {
   $('#pick-date', el).addEventListener('change', (e) => {
     if (isValidKey(e.target.value)) go(`#/day/${e.target.value}`, { replace: true });
   });
+  $$('[data-toggle]', el).forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.toggle;
+    const set = getCollapsed();
+    const shut = !set.has(id);
+    if (shut) set.add(id); else set.delete(id);
+    setCollapsed(set);
+    b.closest('.meal').classList.toggle('collapsed', shut);
+    b.setAttribute('aria-expanded', String(!shut));
+  }));
   $$('[data-add]', el).forEach((b) => b.addEventListener('click', () => go(`#/add/${date}/${b.dataset.add}`)));
 
   $('#btn-add-meal', el).addEventListener('click', async () => {

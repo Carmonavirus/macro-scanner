@@ -493,3 +493,12 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 .steps-line { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
 .steps-line .ic { width: 18px; height: 18px; color: var(--accent); }
 .steps-line .muted { margin-left: 2px; }
+
+/* ---------- v24: collapsible meals in the diary ---------- */
+.meal-toggle { display: flex; align-items: flex-start; gap: 6px; border: 0; background: none; color: inherit; font: inherit; text-align: left; padding: 0; cursor: pointer; }
+.meal-toggle .meal-name { min-width: 0; }
+.meal-chev { width: 18px; height: 18px; margin-top: 3px; flex: none; color: var(--muted); transition: transform .15s; }
+.meal.collapsed .meal-chev { transform: rotate(-90deg); }
+.meal.collapsed .entries, .meal.collapsed .btn.add { display: none; }
+.meal-count { display: none; }
+.meal.collapsed .meal-count { display: inline; }
