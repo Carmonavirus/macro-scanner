@@ -31,13 +31,38 @@ export const storeById = (id) => STORES.find((s) => s.id === id) || STORES[0];
 export const getStore = async () => storeById(await db.getSetting(SETTING, 'edeka'));
 export const setStore = (id) => db.setSetting(SETTING, storeById(id).id);
 
-/** "Hähnchenbrust, roh · Chicken breast, raw" → "Hähnchenbrust": the German food word to search for. */
+/** "Paprika, grün · Green bell pepper" → "Paprika grün": every word of the German name. */
+export function shopTerm(name) {
+  return String(name || '').split('·')[0].replace(/[,()/]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** For Open Food Facts: the same without "roh" etc., which product names rarely say. */
 export function searchTerm(name) {
-  return String(name || '').split(/[·,(]/)[0].replace(/\b(roh|gekocht|natur|frisch)\b/gi, '').replace(/\s+/g, ' ').trim();
+  return shopTerm(name).replace(/(^|\s)(roh|gekocht|ungekocht|natur|frisch)(?=\s|$)/gi, ' ').replace(/\s+/g, ' ').trim();
 }
 
 /** Link to search the shop's own website, or null when we don't know its search page. */
-export const storeSearchUrl = (store, name) => (store.search ? store.search(searchTerm(name)) : null);
+export const storeSearchUrl = (store, name) => (store.search ? store.search(shopTerm(name)) : null);
+
+// Open Food Facts allows 10 searches a minute per phone. Count them, and wait instead of being blocked.
+const LIMIT_KEY = 'offSearches';
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function takeSlot(onWait) {
+  for (;;) {
+    let times = [];
+    try { times = JSON.parse(localStorage.getItem(LIMIT_KEY)) || []; } catch { /* ignore */ }
+    const now = Date.now();
+    times = times.filter((t) => now - t < 61000);
+    if (times.length < 8) {
+      times.push(now);
+      try { localStorage.setItem(LIMIT_KEY, JSON.stringify(times)); } catch { /* ignore */ }
+      return;
+    }
+    const ms = 61000 - (now - times[0]);
+    onWait?.(Math.ceil(ms / 1000));
+    await wait(Math.min(ms, 5000));
+  }
+}
 
 /** Where a found product opens: the shop's own page if it has one, otherwise Open Food Facts. */
 export function productUrl(store, p) {
@@ -77,12 +102,23 @@ function macroDistance(a, b) {
   return d('kcal', 40) * 1.5 + d('protein', 4) + d('carbs', 4) + d('fat', 3);
 }
 
-async function search(store, q) {
+async function search(store, q, onWait) {
+  await takeSlot(onWait);
   const url = `${OFF_SEARCH}?search_terms=${enc(q)}&tagtype_0=stores&tag_contains_0=contains&tag_0=${enc(store.off)}`
-    + `&tagtype_1=countries&tag_contains_1=contains&tag_1=germany&sort_by=unique_scans_n&page_size=24&json=1&fields=${FIELDS}&lc=de`;
+    + `&tagtype_1=countries&tag_contains_1=contains&tag_1=germany&sort_by=unique_scans_n&page_size=20&json=1&fields=${FIELDS}&lc=de`;
   let res;
-  try { res = await fetch(url, { headers: { Accept: 'application/json' } }); } catch { throw new Error('Couldn’t reach Open Food Facts. Check your internet connection.'); }
-  if (res.status === 429 || res.status === 503) throw new Error('Open Food Facts is busy. Wait a minute and try again.');
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (res.status !== 429 && res.status !== 503) break;
+    } catch {
+      // A blocked or busy answer comes without the headers the browser needs, so it looks like no internet.
+      if (navigator.onLine === false) throw new Error('No internet connection.');
+    }
+    if (attempt >= 1) throw new Error('Open Food Facts is busy or limiting searches right now. Wait a minute and try again.');
+    onWait?.(10);
+    await wait(10000);
+  }
   if (!res.ok) throw new Error(`Open Food Facts answered ${res.status}`);
   return (await res.json()).products || [];
 }
@@ -92,7 +128,7 @@ async function search(store, q) {
  * macros are closest to the recipe's first. `want` is { name, per100 } of the recipe ingredient.
  * Resolves [{ code, name, brand, quantity, imageUrl, per100, house, match }]. Cached for a week.
  */
-export async function findAtStore(store, want) {
+export async function findAtStore(store, want, { onWait } = {}) {
   const name = typeof want === 'string' ? want : want.name;
   const target = typeof want === 'string' ? null : want.per100;
   const q = searchTerm(name);
@@ -105,12 +141,13 @@ export async function findAtStore(store, want) {
 
   // A basic food (raw, plain) shouldn't turn into cold cuts or tortellini.
   const basic = /\broh\b|\braw\b|natur|plain|ungekocht|uncooked/i.test(name) || !PREPARED_NAME.test(q.toLowerCase());
-  const terms = [q, ...(SYNONYMS[q.toLowerCase()] || [])];
+  const base = q.split(' ')[0].toLowerCase();
+  const terms = [q, ...(SYNONYMS[q.toLowerCase()] || SYNONYMS[base] || [])];
   const seen = new Set();
   let list = [];
   for (const term of terms.slice(0, 3)) {
     const words = term.toLowerCase().split(/\s+/).filter((w) => w.length > 2).map((w) => w.replace(/-/g, ''));
-    for (const p of await search(store, term)) {
+    for (const p of await search(store, term, onWait)) {
       if (!p.code || seen.has(p.code)) continue;
       if (p.nutriments?.['energy-kcal_100g'] == null && p.nutriments?.['energy-kj_100g'] == null) continue;
       seen.add(p.code);
@@ -130,7 +167,8 @@ export async function findAtStore(store, want) {
       });
     }
     // Enough good ones: no need to ask again with another name (Open Food Facts limits searches).
-    if (list.some((x) => x.named && x.score < 1)) break;
+    // Other names only when this one found nothing useful (each search counts against the limit).
+    if (list.some((x) => x.named)) break;
   }
   // Products with the food in their name only, when there are any.
   const named = list.filter((p) => p.named);
