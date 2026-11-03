@@ -24,6 +24,7 @@ import { renderSupplements } from './views/supplements.js';
 import { renderColours } from './views/colours.js';
 import { renderShopping } from './views/shopping.js';
 import { renderRecipes, renderRecipe, renderMealdbRecipe } from './views/recipes.js';
+import { renderEatOut } from './views/eatout.js';
 import { syncThemeFromDb } from './theme.js';
 import { icon } from './icons.js';
 import { startAutoSync, requestPersistence } from './sync.js';
@@ -59,6 +60,7 @@ const ROUTES = {
   recipes: { tab: 'recipes', title: 'Recipes', root: true, render: () => renderRecipes(view) },
   mealdb: { tab: 'recipes', title: 'Recipe', render: ([id]) => renderMealdbRecipe(view, id) },
   recipe: { tab: 'recipes', title: 'Recipe', render: ([id]) => renderRecipe(view, id) },
+  eatout: { tab: 'recipes', title: 'Eat out', render: () => renderEatOut(view) },
   shopping: { tab: 'shopping', title: 'Shopping list', root: true, render: () => renderShopping(view) },
   colours: { tab: 'more', title: 'Colours', render: () => renderColours(view) },
   supplements: { tab: 'diary', title: 'My supplements', render: () => renderSupplements(view) },

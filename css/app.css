@@ -467,7 +467,7 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 /* ---------- v22: macro line along the bottom of each food row ---------- */
 /* Protein, carbs and fat each take the width of their share of the calories. */
 :root { --tint: 3px; }
-.history a.mx, .entries a.mx, .entries .swipe .swipe-row.mx, .recipe-ingredients li.mx {
+.history a.mx, .history .eat-row.mx, .entries a.mx, .entries .swipe .swipe-row.mx, .recipe-ingredients li.mx {
   /* Softer than the meal's own line, so the meal total stands out. */
   --lp: color-mix(in srgb, var(--protein) 50%, var(--card));
   --lc: color-mix(in srgb, var(--carbs) 50%, var(--card));
@@ -514,3 +514,26 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 
 /* ---------- v27/v28: swipe between days (animated from js/views/diary.js) ---------- */
 html, body { overflow-x: clip; } /* the day slides sideways without making the page scroll sideways */
+
+/* ---------- v29: Eat out (chain dishes that fit what's left today) ---------- */
+.eat-left .card-title { margin-bottom: 4px; }
+.eat-left-line { margin: 0; font-variant-numeric: tabular-nums; }
+.eat-list { margin-bottom: 10px; }
+.eat-row {
+  display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 12px;
+  background-color: var(--card); border: 1px solid var(--line);
+}
+.eat-row .info { flex: 1; }
+.eat-list strong { white-space: normal; }
+.eat-after { color: var(--protein); }
+.eat-own summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; align-items: center; gap: 6px; }
+.eat-own summary::-webkit-details-marker { display: none; }
+.eat-own select { font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+.own-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.own-grid input { width: 100%; box-sizing: border-box; }
+.own-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 6px; }
+.own-list li { display: flex; align-items: center; gap: 8px; }
+.own-list .info { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.eat-cta { display: flex; gap: 12px; align-items: center; text-decoration: none; color: inherit; }
+.eat-cta .info { flex: 1; display: flex; flex-direction: column; }
+.eat-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: .9rem; }
