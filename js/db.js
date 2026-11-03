@@ -181,6 +181,9 @@ export async function setSetting(key, value) {
 /** Daily goals: { kcal, protein, carbs, fat } – numbers or null when not set. */
 export const getGoals = () => getSetting('goals', { kcal: null, protein: null, carbs: null, fat: null });
 export const setGoals = (goals) => setSetting('goals', goals);
+/** Weight (kg) and height (cm), for calories burned by steps. */
+export const getBody = () => getSetting('body', { weight: null, height: null });
+export const setBody = (body) => setSetting('body', body);
 
 // ---------- Backup ----------
 

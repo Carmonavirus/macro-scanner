@@ -9,7 +9,7 @@ import { installBanner, backupBanner } from './more.js';
 import { supplementsCard, bindSupplements } from './supplements.js';
 import { workoutsCard } from './hevy.js';
 import { icon } from '../icons.js';
-import { stepsOn, stepsUpdatedAt, refreshSteps } from '../steps.js';
+import { stepsOn, stepsUpdatedAt, refreshSteps, stepKcal } from '../steps.js';
 
 // Meals folded shut by the user (by meal id, e.g. "breakfast"), remembered on this phone.
 const COLLAPSED_KEY = 'collapsedMeals';
@@ -82,6 +82,7 @@ function bindDaySwipe(el) {
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
   const [meals, entries, goals, supps, workouts] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals(), supplementsCard(date), workoutsCard(date)]);
+  const body = await db.getBody();
   const hasGoals = Object.values(goals).some((g) => g > 0);
   const day = totals(entries);
   const steps = stepsOn(date);
@@ -115,7 +116,7 @@ export async function renderDiary(el, dateParam) {
         <a href="#/goals">${hasGoals ? 'Edit goals' : 'Set goals'}</a>
       </div>
       ${date === today() && goals.kcal > 0 && goals.kcal - day.kcal >= 250 ? `<a class="eat-link" href="#/eatout">${icon('hamburger')} Eat out: what fits ${fmt(goals.kcal - day.kcal, 'kcal')} kcal</a>` : ''}
-      ${steps !== null ? `<div class="steps-line">${icon('footprints')}<strong>${steps.toLocaleString()}</strong> steps${stepsTime ? `<span class="muted small">· updated ${stepsTime}</span>` : ''}</div>` : ''}
+      ${steps !== null ? `<div class="steps-line">${icon('footprints')}<strong>${steps.toLocaleString()}</strong> steps · <strong>≈ ${stepKcal(steps, body)}</strong> kcal burned${body.weight > 0 ? '' : ' <a class="small" href="#/goals">(add your weight)</a>'}${stepsTime ? `<span class="muted small">· updated ${stepsTime}</span>` : ''}</div>` : ''}
     </section>
 
     ${allMeals.map((meal) => {
