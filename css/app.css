@@ -596,3 +596,19 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .near-row .info strong, .near-row .info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .near-row .btn.icon { width: 36px; min-height: 36px; }
 .near-row .btn.icon .ic { width: 18px; height: 18px; }
+
+/* Recipe from a post */
+.import-card { display: grid; gap: 10px; }
+.import-card label { display: grid; gap: 4px; font-weight: 600; }
+.import-card input, .import-card textarea, .import-review input { font: inherit; font-weight: 400; color: var(--text); padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); box-sizing: border-box; width: 100%; }
+.import-card textarea { resize: vertical; }
+.import-card #imp-paste { justify-self: start; }
+.import-card .steps { margin: 0; }
+.import-card p { margin: 0; }
+.import-card .status:empty, .import-card #imp-files-info:empty { display: none; }
+.import-review { display: grid; gap: 10px; }
+.import-review label { display: grid; gap: 4px; }
+.import-review .import-serv { display: flex; align-items: center; gap: 8px; }
+.import-review .import-serv input { width: 72px; }
+.import-review p { margin: 0; }
+.import-source { margin-bottom: 12px; text-decoration: none; }
