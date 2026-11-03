@@ -5,11 +5,10 @@
 // The Gemini key lives in localStorage on this phone only (never in backups or the gist).
 
 import { searchGeneric, genericProduct } from './generic.js';
+import { generateJson, checkKey } from './gemini.js';
 
 const KEY = 'gemini';            // localStorage: { key }
 const LANG_KEY = 'voiceLang';    // localStorage: 'de-DE' | 'en-US'
-const MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
-const API = 'https://generativelanguage.googleapis.com/v1beta/models/';
 export const KEY_URL = 'https://aistudio.google.com/apikey';
 
 export function geminiKey() { try { return JSON.parse(localStorage.getItem(KEY))?.key || ''; } catch { return ''; } }
@@ -90,32 +89,12 @@ const SCHEMA = {
 };
 
 async function callGemini(text, key) {
-  let lastErr;
-  for (const model of MODELS) {
-    const res = await fetch(`${API}${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: PROMPT + text }] }],
-        generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0.1 },
-      }),
-    });
-    if (res.status === 404) { lastErr = new Error(`Model ${model} not found`); continue; }
-    if (!res.ok) {
-      let msg = `Gemini answered ${res.status}`;
-      try { msg = (await res.json())?.error?.message || msg; } catch { /* ignore */ }
-      throw new Error(res.status === 400 && /API key/i.test(msg) ? 'The Gemini key isn’t valid. Check it under More.' : msg);
-    }
-    const data = await res.json();
-    const out = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
-    return JSON.parse(out).items || [];
-  }
-  throw lastErr || new Error('No Gemini model available');
+  return (await generateJson(key, [{ text: PROMPT + text }], SCHEMA)).items || [];
 }
 
-/** Check a key with a tiny request. Throws with a readable message when it doesn't work. */
+/** Check a key. Throws with a readable message when Google doesn't accept it; a busy Gemini is fine. */
 export async function testKey(key) {
-  await callGemini('100 g Apfel', key);
+  await checkKey(key);
 }
 
 const NUM_WORDS = {

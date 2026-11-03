@@ -7,9 +7,8 @@
 
 import * as db from './db.js';
 import { geminiKey, matchFood } from './voice.js';
+import { generateJson } from './gemini.js';
 
-const MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
-const API = 'https://generativelanguage.googleapis.com/v1beta/models/';
 const KEY = 'myRecipes';
 /** Gemini takes files inline up to about 20 MB per request; base64 makes them a third bigger. */
 export const MAX_MEDIA_BYTES = 14 * 1024 * 1024;
@@ -89,7 +88,7 @@ export const textWithoutLink = (s) => String(s || '').replace(/https?:\/\/[^\s<>
  * Ask Gemini for the recipe. `files` are File objects (video or images).
  * Resolves the raw recipe JSON, or throws with a readable message.
  */
-export async function readRecipe({ link, caption, files = [] }) {
+export async function readRecipe({ link, caption, files = [], onRetry }) {
   const key = geminiKey();
   if (!key) throw new Error('Connect Google Gemini first.');
   const size = files.reduce((n, f) => n + f.size, 0);
@@ -97,30 +96,7 @@ export async function readRecipe({ link, caption, files = [] }) {
   const parts = [{ text: `${PROMPT}\n\nLink to the post: ${link || '(none)'}\nCaption:\n${caption || '(no caption given)'}` }];
   for (const f of files) parts.push({ inlineData: { mimeType: f.type || 'application/octet-stream', data: await toBase64(f) } });
 
-  let lastErr;
-  for (const model of MODELS) {
-    const res = await fetch(`${API}${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts }],
-        generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0.2 },
-      }),
-    });
-    if (res.status === 404) { lastErr = new Error(`Model ${model} not found`); continue; }
-    if (!res.ok) {
-      let msg = `Gemini answered ${res.status}`;
-      try { msg = (await res.json())?.error?.message || msg; } catch { /* ignore */ }
-      if (res.status === 400 && /API key/i.test(msg)) msg = 'The Gemini key isn’t valid. Check it under More.';
-      if (res.status === 413) msg = 'The video is too big for Gemini. Use a shorter clip or screenshots.';
-      if (res.status === 429) msg = 'Gemini’s free limit is used up for now. Try again in a minute.';
-      throw new Error(msg);
-    }
-    const data = await res.json();
-    const out = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
-    try { return JSON.parse(out); } catch { throw new Error('Gemini’s answer couldn’t be read. Try again.'); }
-  }
-  throw lastErr || new Error('No Gemini model available');
+  return generateJson(key, parts, SCHEMA, { temperature: 0.2, onRetry });
 }
 
 const fold = (x) => String(x || '').toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss')
