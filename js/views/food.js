@@ -58,10 +58,10 @@ export async function renderAdd(el, date, mealId) {
       <button class="btn" type="submit">Look up</button>
     </form>
 
-    <div id="saved" hidden>
-      <h2 class="section-title with-ic">${icon('bookmark')} Saved meals</h2>
+    <details id="saved" class="saved-section" hidden>
+      <summary class="section-title with-ic">${icon('bookmark')} Saved meals <span class="muted small" id="saved-count"></span>${icon('chevron-down', { cls: 'saved-chev' })}</summary>
       <ul class="history saved-meals" id="saved-list"></ul>
-    </div>
+    </details>
 
     <div class="row-between">
       <h2 class="section-title">Your foods</h2>
@@ -132,13 +132,13 @@ export async function renderAdd(el, date, mealId) {
   const renderSaved = (q = '') => {
     const list = q ? saved.filter((s) => `${s.name} ${s.items.map((i) => i.name).join(' ')}`.toLowerCase().includes(q)) : saved;
     $('#saved', el).hidden = !list.length;
+    $('#saved-count', el).textContent = `(${list.length})`;
+    if (q && list.length) $('#saved', el).open = true;
     $('#saved-list', el).innerHTML = list.map((s) => {
       const tot = totals(s.items);
       return `<li class="saved-meal"><button type="button" class="saved-add" data-saved="${esc(s.id)}">
-        <span class="thumb">${icon('bookmark')}</span>
         <span class="info"><strong>${esc(s.name)}</strong>
-          <span class="small muted">${s.items.length} item${s.items.length === 1 ? '' : 's'} · ${fmt(tot.kcal, 'kcal')} kcal · P ${fmt(tot.protein)} · C ${fmt(tot.carbs)} · F ${fmt(tot.fat)}</span>
-          <span class="small muted saved-items">${esc(s.items.map((i) => i.name).join(', '))}</span></span>
+          <span class="small muted saved-items">${fmt(tot.kcal, 'kcal')} kcal · P ${fmt(tot.protein)} · ${s.items.length} item${s.items.length === 1 ? '' : 's'}: ${esc(s.items.map((i) => i.name).join(', '))}</span></span>
         <span class="saved-plus">${icon('plus')}</span>
       </button><button type="button" class="btn icon ghost" data-saved-del="${esc(s.id)}" aria-label="Delete saved meal ${esc(s.name)}">${icon('trash-2')}</button></li>`;
     }).join('');
@@ -158,6 +158,12 @@ export async function renderAdd(el, date, mealId) {
     }));
   };
   renderSaved();
+  // Open or closed is remembered on this phone.
+  try { $('#saved', el).open = localStorage.getItem('savedOpen') !== '0'; } catch { $('#saved', el).open = true; }
+  $('#saved', el).addEventListener('toggle', () => {
+    if ($('#search', el).value.trim()) return;
+    try { localStorage.setItem('savedOpen', $('#saved', el).open ? '1' : '0'); } catch { /* ignore */ }
+  });
 
   // Your foods: recent first, filtered by search
   const foods = await db.recentProducts(200);

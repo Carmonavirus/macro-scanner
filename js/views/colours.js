@@ -55,9 +55,9 @@ export async function renderColours(el) {
           </div>`).join('')}
       </section>`).join('')}
     <section class="card">
-      <h2 class="card-title">Food tint</h2>
-      <p class="hint">Each food’s background is split into the macro colours, sized by how many of its calories come from protein, carbs and fat. Half fat, half protein shows half and half.</p>
-      <div class="chips tint-chips" role="radiogroup" aria-label="Food tint">${[['off', 'Off'], ['light', 'Light'], ['medium', 'Medium'], ['strong', 'Strong']].map(([v, l]) => `<button type="button" class="chip" role="radio" data-tint="${v}">${l}</button>`).join('')}</div>
+      <h2 class="card-title">Macro line</h2>
+      <p class="hint">Each food gets a line along its bottom edge in the macro colours, split by how many of its calories come from protein, carbs and fat. Half fat, half protein shows half and half.</p>
+      <div class="chips tint-chips" role="radiogroup" aria-label="Macro line">${[['off', 'Off'], ['light', 'Thin'], ['medium', 'Medium'], ['strong', 'Thick']].map(([v, l]) => `<button type="button" class="chip" role="radio" data-tint="${v}">${l}</button>`).join('')}</div>
       <ul class="entries tint-preview">
         <li><a ${tintAttrs({ protein: 23, carbs: 0, fat: 1.5 })}><span class="info"><strong>Hähnchenbrust</strong><span class="muted small">P 23 · C 0 · F 1.5 per 100 g</span></span></a></li>
         <li><a ${tintAttrs({ protein: 13, carbs: 58, fat: 6.5 })}><span class="info"><strong>Haferflocken</strong><span class="muted small">P 13 · C 58 · F 6.5 per 100 g</span></span></a></li>

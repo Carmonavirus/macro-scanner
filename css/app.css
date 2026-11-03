@@ -464,18 +464,27 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 .recipe-list, .creator-list { grid-template-columns: minmax(0, 1fr); }
 .recipe-list strong, .creator-list strong { white-space: normal; }
 
-/* ---------- v20: Food rows tinted by their main macro ---------- */
-:root { --tint: 13%; }
-@media (prefers-color-scheme: dark) { :root { --tint: 20%; } }
-.history a.mx, .entries .swipe .swipe-row.mx, .entries a.mx, .recipe-ingredients li.mx {
-  --tp: color-mix(in srgb, var(--protein) var(--tint), var(--card));
-  --tc: color-mix(in srgb, var(--carbs) var(--tint), var(--card));
-  --tf: color-mix(in srgb, var(--fat) var(--tint), var(--card));
-  background: linear-gradient(90deg, var(--tp) 0 var(--a), var(--tc) var(--a) var(--b), var(--tf) var(--b) 100%);
+/* ---------- v22: macro line along the bottom of each food row ---------- */
+/* Protein, carbs and fat each take the width of their share of the calories. */
+:root { --tint: 3px; }
+.history a.mx, .entries a.mx, .entries .swipe .swipe-row.mx, .recipe-ingredients li.mx {
+  background-image: linear-gradient(90deg, var(--protein) 0 var(--a), var(--carbs) var(--a) var(--b), var(--fat) var(--b) 100%);
+  background-repeat: no-repeat; background-position: left bottom; background-size: 100% var(--tint);
 }
-.entries .swipe .swipe-row { padding-left: 10px; padding-right: 10px; }
-.entries .swipe:has(.swipe-row.mx) { border-radius: 10px; border-bottom: none; margin-top: 4px; }
-.recipe-ingredients li.mx { padding-left: 10px; padding-right: 10px; border-radius: 10px; margin-bottom: 4px; border-bottom: none; }
+.entries .swipe:has(.swipe-row.mx) { border-bottom-color: transparent; }
+.recipe-ingredients li.mx { border-bottom-color: transparent; }
 .tint-preview { border-top: none; margin-top: 4px; }
 .tint-preview li { margin-bottom: 4px; }
-.tint-preview a { border-bottom: none; padding: 10px; border-radius: 10px; }
+.tint-preview a { border-bottom: none; padding: 10px 2px; }
+
+/* Saved meals in Add food: compact and collapsible */
+.history { grid-template-columns: minmax(0, 1fr); }
+.saved-section { margin-bottom: 14px; }
+.saved-section summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 4px 0; margin-bottom: 6px; }
+.saved-section summary::-webkit-details-marker { display: none; }
+.saved-section .saved-chev { margin-left: auto; transition: transform .15s; }
+.saved-section[open] .saved-chev { transform: rotate(180deg); }
+.saved-meals { gap: 6px; }
+.saved-add { padding: 8px 10px; gap: 8px; }
+.saved-add .info { min-width: 0; display: flex; flex-direction: column; }
+.saved-meal [data-saved-del] { min-width: 36px; min-height: 36px; }
