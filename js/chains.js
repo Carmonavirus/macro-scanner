@@ -14,6 +14,8 @@ export const PRICES_CHECKED = '2026-11-03';
 
 const RAW = {
   mcd: {
+    menuUrl: 'https://www.mcdonalds.com/de/de-de/produkte/alle-produkte.html',
+    links: {"Hamburger": "https://www.mcdonalds.com/de/de-de/product/hamburger-1-200016.html", "Cheeseburger": "https://www.mcdonalds.com/de/de-de/product/cheeseburger-2010.html", "Double Cheeseburger": "https://www.mcdonalds.com/de/de-de/product/doppel-cheeseburger-200018.html", "Big Mac": "https://www.mcdonalds.com/de/de-de/product/big-mac-2050.html", "Hamburger Royal TS": "https://www.mcdonalds.com/de/de-de/product/hamburger-royal-ts-2310.html", "Hamburger Royal Käse": "https://www.mcdonalds.com/de/de-de/product/hamburger-royal-kse-2040.html", "Big Tasty Bacon": "https://www.mcdonalds.com/de/de-de/product/big-tasty-bacon-6474.html", "Chickenburger": "https://www.mcdonalds.com/de/de-de/product/chickenburger-2401.html", "McChicken Classic": "https://www.mcdonalds.com/de/de-de/product/mcchicken.html", "McCrispy": "https://www.mcdonalds.com/de/de-de/product/mccrispy-5600.html", "6 Chicken McNuggets": "https://www.mcdonalds.com/de/de-de/product/6-chicken-mcnuggets-200023.html", "9 Chicken McNuggets": "https://www.mcdonalds.com/de/de-de/product/9-chicken-mcnuggets-200024.html", "20 Chicken McNuggets": "https://www.mcdonalds.com/de/de-de/product/20-chicken-mcnuggets-200026.html", "Pommes small": "https://www.mcdonalds.com/de/de-de/product/pommes-frites-klein-3000.html", "Pommes medium": "https://www.mcdonalds.com/de/de-de/product/pommes-frites-mittel-3010.html", "Pommes large": "https://www.mcdonalds.com/de/de-de/product/pommes-frites-gross-3020.html", "Snack Salad (no dressing)": "https://www.mcdonalds.com/de/de-de/product/snack-salad-classic-3800.html", "Apple bag": "https://www.mcdonalds.com/de/de-de/product/bio-apfeltte-60g-200059.html", "McFlurry Oreo": "https://www.mcdonalds.com/de/de-de/product/mcflurry-ohne-wahlzutat-200194.html", "McSundae Chocolate": "https://www.mcdonalds.com/de/de-de/product/mcsundae-schokosauce-4010.html"},
     searchSite: 'mcdonalds.com/de', fsBrand: "McDonald's",
     badge: 'McD', color: '#da291c', name: "McDonald's", emoji: '🍔',
     site: 'https://www.mcdonalds.com/de/de-de.html', nutritionSrc: 'https://mcdomenu.de/kalorien-naehrwerte/', priceSrc: 'https://burgerpreise.de/mc-donalds-preise/',
@@ -44,6 +46,8 @@ const RAW = {
     ],
   },
   bk: {
+    menuUrl: 'https://www.burgerking.de/menu/section-97f9b739-cfbc-41ea-ba28-9be4479d6b03',
+    links: {"Double Whopper": "https://www.burgerking.de/menu/picker-552e4938-cdc0-4fdf-916a-35176e5ca472", "Plant-based Whopper": "https://www.burgerking.de/menu/picker-ec123fdb-bde7-4add-9c37-91f9a2fc83db", "Long Chicken": "https://www.burgerking.de/menu/picker-f0c32ada-14cb-4ba4-b912-361d85b75da2", "Crispy Chicken": "https://www.burgerking.de/menu/picker-1e23a1ef-d9d2-4a8e-bb87-b6b72f4ce9fd", "Cheeseburger": "https://www.burgerking.de/menu/item-item_1814", "Chili Cheese Burger": "https://www.burgerking.de/menu/item-item_19064"},
     searchSite: 'burgerking.de', fsBrand: "Burger King",
     badge: 'BK', color: '#f28c00', name: 'Burger King', emoji: '👑',
     site: 'https://www.burgerking.de/', nutritionSrc: 'https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/burger-king', priceSrc: 'https://burgerpreise.de/burger-king-preise/',
@@ -68,6 +72,8 @@ const RAW = {
     ],
   },
   kfc: {
+    menuUrl: 'https://www.kfc.de/produkte/',
+    links: {"Classic Zinger Burger": "https://www.kfc.de/produkte/Menu/showDetail/m138-zinger-burger/"},
     searchSite: 'kfc.de', fsBrand: "KFC",
     badge: 'KFC', color: '#c8102e', name: 'KFC', emoji: '🍗',
     site: 'https://www.kfc.de/', nutritionSrc: 'https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/kfc', priceSrc: 'https://burgerpreise.de/kfc-preise/',
@@ -89,6 +95,8 @@ const RAW = {
     ],
   },
   subway: {
+    menuUrl: 'https://www.subway.com/de-de/menu/category/934',
+    links: {"Chicken Fajita Sub 15 cm": "https://www.subway.com/de-de/menu/product/4003", "Chicken Fajita Sub Footlong": "https://www.subway.com/de-de/menu/product/4003", "Chicken Tandoori Sub 15 cm": "https://www.subway.com/de-DE/MenuNutrition/Menu/Product?ProductId=10368&MenuCategoryId=344", "Sliced Chicken Wrap": "https://www.subway.com/de-de/menu/category/840", "Chicken Teriyaki Wrap": "https://www.subway.com/de-de/menu/category/840", "Chicken Fajita Wrap": "https://www.subway.com/de-de/menu/category/840", "Cookie": "https://www.subway.com/de-de/menu/category/1319"},
     searchSite: 'subway.com/de-de', fsBrand: "Subway",
     badge: 'SUB', color: '#008c3a', name: 'Subway', emoji: '🥖',
     site: 'https://www.subway.com/de-DE', nutritionSrc: 'https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/subway', priceSrc: 'https://burgerpreise.de/subway-preise/',
@@ -112,6 +120,8 @@ const RAW = {
     ],
   },
   dd: {
+    menuUrl: 'https://deananddavid.com/speisen-und-getraenke/',
+    links: {},
     searchSite: '', fsBrand: "Dean&David",
     badge: 'd&d', color: '#2b2b2b', name: 'dean&david', emoji: '🥗',
     site: 'https://www.deananddavid.com/', nutritionSrc: 'https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/dean-david', priceSrc: 'https://www.speisekarte.de/berlin/restaurant/deandavid_bowls_salate_curries_snacks_in_berlin_schlossstrasse/speisekarte',
@@ -129,7 +139,7 @@ const RAW = {
 };
 
 // Plain text badges (initials in a colour), not logos: those are the chains' trademarks.
-export const CHAINS = Object.entries(RAW).map(([id, c]) => ({ id, name: c.name, emoji: c.emoji, badge: c.badge, color: c.color, site: c.site, nutritionSrc: c.nutritionSrc, priceSrc: c.priceSrc, searchSite: c.searchSite, fsBrand: c.fsBrand }));
+export const CHAINS = Object.entries(RAW).map(([id, c]) => ({ id, name: c.name, emoji: c.emoji, badge: c.badge, color: c.color, site: c.site, nutritionSrc: c.nutritionSrc, priceSrc: c.priceSrc, searchSite: c.searchSite, fsBrand: c.fsBrand, menuUrl: c.menuUrl, links: c.links || {} }));
 export const chainById = (id) => CHAINS.find((c) => c.id === id) || { id, name: id === 'own' ? 'My dish' : id, emoji: '⭐', badge: '★', color: '#6b6b6b' };
 
 const slug = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -231,17 +241,18 @@ export function partsLabel(parts) {
 }
 
 /**
- * Links for one dish: `menu` finds the item on the chain's own website (a web search limited to
- * their site, because the chains' item addresses change too often to link directly), `nutrition`
- * opens where its numbers came from (the McDonald's table, otherwise the item in FatSecret).
+ * Links for one dish: `menu` is the dish's page on the chain's own website where we found one,
+ * otherwise the chain's menu section it's in (the chains' own pages, checked 2026-11-03).
+ * `nutrition` opens where its numbers came from (the McDonald's table, otherwise FatSecret).
  */
 export function dishLinks(d) {
   const c = chainById(d.chain);
   if (!c.fsBrand) return null;
-  const g = (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+  const url = c.links?.[d.name] || c.menuUrl;
+  const isSection = url === c.menuUrl || /\/category\/|\/section-/.test(url);
   return {
-    menuLabel: c.searchSite ? c.searchSite.split('/')[0] : c.name,
-    menu: g(c.searchSite ? `site:${c.searchSite} ${d.name}` : `${c.name} ${d.name}`),
+    menu: url,
+    menuLabel: isSection ? `${c.name} menu` : `on ${c.name}`,
     nutrition: d.chain === 'mcd' ? c.nutritionSrc
       : `https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/search?q=${encodeURIComponent(`${c.fsBrand} ${d.name}`)}`,
   };
