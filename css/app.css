@@ -580,3 +580,17 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .history .eat-links a { display: inline; padding: 0; border: 0; border-radius: 0; background: none; color: var(--muted); text-decoration: underline; }
 .eat-links { display: block; }
 .eat-part { color: var(--text); }
+
+/* Eat out: nearest restaurants */
+.eat-near { display: grid; gap: 8px; }
+.eat-near > .btn { justify-self: start; }
+.eat-near .status:empty { display: none; }
+.eat-near .hint { margin: 0; }
+.near-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.near-list:empty { display: none; }
+.near-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); }
+.near-row:first-child { border-top: 0; }
+.near-row .info { flex: 1; min-width: 0; display: grid; }
+.near-row .info strong, .near-row .info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.near-row .btn.icon { width: 36px; min-height: 36px; }
+.near-row .btn.icon .ic { width: 18px; height: 18px; }
