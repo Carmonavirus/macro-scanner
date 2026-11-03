@@ -128,7 +128,19 @@ function relevant(p, it) {
 function sameFood(p, it) {
   const main = fold(it.de).split(/\s+/).find((w) => w.length > 2 && !STOP.has(w));
   if (!main) return true;
-  return fold(`${p.name} ${p.brand || ''}`).replace(/\s+/g, '').includes(main);
+  // A cut or form of the same food still counts: "Hähnchenbrustfilet" is "Hähnchenbrust".
+  const base = main.replace(/(filets?|fleisch|stucke|streifen|wurfel|scheiben|medaillons)$/, '');
+  return fold(`${p.name} ${p.brand || ''}`).replace(/\s+/g, '').includes(base.length > 3 ? base : main);
+}
+
+/**
+ * One of your own foods only fits when the ingredient names everything its name says:
+ * "Exquisa Paprika-Chilli fitline" (from another recipe) is not the "Paprika" of this one.
+ */
+function fitsMine(p, it) {
+  if (String(p.code || '').startsWith('gen-')) return true;
+  const said = fold(`${it.de || ''} ${it.en || ''} ${it.name || ''} ${it.buy || ''} ${it.said || ''} ${it.brand || ''} ${it.product || ''}`).replace(/\s+/g, '');
+  return fold(p.name).split(/\s+/).filter((w) => w.length > 3 && !STOP.has(w)).every((w) => said.includes(w));
 }
 
 /**
@@ -155,10 +167,14 @@ export function toDraft(raw, products, { link, caption }) {
       // The name as the post writes it: kept as the ingredient's name and used for shop searches.
       const postName = String(it.name || '').trim() || (brand ? `${brand} ${product}`.trim() : '') || nameOf(it.said) || it.de || it.en || '';
       // A brand product: only your own foods of that brand count; the basic foods are a different food.
-      const choices = brand ? matchFood(it, products).filter((p) => fold(p.brand).includes(fold(brand).trim())) : matchFood(it, products);
+      const choices = brand
+        ? matchFood(it, products).filter((p) => fold(p.brand).includes(fold(brand).trim()))
+        : matchFood(it, products).filter((p) => fitsMine(p, it));
+      // Gemini's estimate is named after what to buy, so the menu and the 🛒 line say the same.
+      const buy = (brand ? '' : String(it.buy || '').trim()) || postName;
       if (it.per100 && it.per100.kcal >= 0) {
         choices.push({
-          code: null, name: postName || it.de || it.en, brand: 'Estimated by Gemini', unit: 'g', estimate: true,
+          code: null, name: buy || it.de || it.en, brand: 'Estimated by Gemini', unit: 'g', estimate: true,
           per100: { kcal: +it.per100.kcal || 0, protein: +it.per100.protein || 0, carbs: +it.per100.carbs || 0, fat: +it.per100.fat || 0 },
         });
       }
@@ -167,7 +183,7 @@ export function toDraft(raw, products, { link, caption }) {
       if (est?.estimate && choices.length > 1 && !(relevant(choices[0], it) && sameFood(choices[0], it))) choices.unshift(choices.pop());
       const optional = !!it.optional;
       return {
-        said: it.said || it.en || it.de, saidEn: it.saidEn || '', postName, buy: (brand ? '' : String(it.buy || '').trim()) || postName, brand, product, optional,
+        said: it.said || it.en || it.de, saidEn: it.saidEn || '', postName, buy, brand, product, optional,
         grams: Math.max(0, Math.round(Number(it.grams) || 0)) || 100, choices,
         // Optional extras (a side of rice) start left out, like the post's own nutrition usually does.
         pick: choices.length && !optional ? 0 : -1,
@@ -258,7 +274,7 @@ export async function saveDraft(d) {
  */
 export function buyName(p, it = {}) {
   if (!p) return '';
-  if (p.estimate) return it.buy || it.postName || p.name;
+  if (p.estimate) return p.name;
   if (p.source === 'generic' || String(p.code || '').startsWith('gen-')) return searchTerm(p.name);
   const name = String(p.name || '').split('·')[0].trim();
   // Brand words the name doesn't already say: "Rama Cremefine" + "Cremefine 7%" → "Rama Cremefine 7%".
