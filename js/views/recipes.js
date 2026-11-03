@@ -12,6 +12,8 @@ import {
   MEALDB_CATEGORIES, mealdbCategory, mealdbSearch, mealdbMeal,
 } from '../recipes.js';
 import { addToShoppingList } from './shopping.js';
+import { storePicker, storeRow, bindStores } from './storepick.js';
+import { getStore } from '../stores.js';
 import { getMyRecipes, myRecipeTotals, sourceName } from '../social.js';
 
 const FILTERS = [
@@ -118,10 +120,11 @@ export async function renderRecipes(el) {
 }
 
 // ---------- One built-in recipe ----------
-export function renderRecipe(el, id) {
+export async function renderRecipe(el, id) {
   const r = recipeById(id);
   if (!r) { el.innerHTML = '<p class="empty">Recipe not found.</p>'; return; }
   let portions = 1;
+  let store = await getStore();
 
   const draw = () => {
     const items = recipeItems(r, portions);
@@ -153,10 +156,12 @@ export function renderRecipe(el, id) {
       </div>
       <section class="card">
         <h3 class="card-title">Ingredients</h3>
-        <ul class="recipe-ingredients">${items.map((i) => `
+        ${storePicker(store)}
+        <ul class="recipe-ingredients">${items.map((i, n) => `
           <li ${tintAttrs(i.per100)}><span class="shop-emoji" aria-hidden="true">${emojiFor(i.code) || ''}</span>
             <span class="info"><span>${esc(i.name)}</span><span class="small muted">${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
-            <strong>${fmt(i.grams)} ${esc(i.unit)}</strong></li>`).join('')}
+            <strong>${fmt(i.grams)} ${esc(i.unit)}</strong>
+            ${storeRow(store, i.name, n)}</li>`).join('')}
         </ul>
         <p class="muted small">Salt, pepper, herbs and spices aren’t counted.</p>
       </section>
@@ -167,6 +172,7 @@ export function renderRecipe(el, id) {
 
     $('[data-dec]', el).addEventListener('click', () => { portions = Math.max(1, portions - 1); draw(); });
     $('[data-inc]', el).addEventListener('click', () => { portions = Math.min(8, portions + 1); draw(); });
+    bindStores(el, items.map((i) => i.name), { onStore: async () => { store = await getStore(); draw(); } });
     const label = portions > 1 ? `${r.name} ×${portions}` : r.name;
 
     $('#btn-log', el).addEventListener('click', async () => {
