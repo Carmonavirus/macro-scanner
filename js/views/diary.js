@@ -22,25 +22,60 @@ let slideIn = null;
 function bindDaySwipe(el) {
   if (el.dataset.daySwipe) return;
   el.dataset.daySwipe = '1';
-  let x0 = 0, y0 = 0, t0 = 0, skip = true;
+  let x0 = 0, y0 = 0, t0 = 0, skip = true, dragging = false;
+  const reset = () => { el.style.transition = ''; el.style.transform = ''; };
   el.addEventListener('touchstart', (e) => {
     const t = e.touches[0];
     skip = e.touches.length > 1 || !el.dataset.diaryDate
       || !!e.target.closest('.swipe, input, select, textarea, dialog, .amount-slider');
-    x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+    x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); dragging = false;
   }, { passive: true });
-  el.addEventListener('touchend', (e) => {
-    if (skip || !el.dataset.diaryDate) return;
+  // The page follows the finger, so the day change feels like turning a page.
+  el.addEventListener('touchmove', (e) => {
+    if (skip) return;
+    const t = e.touches[0];
+    const dx = t.clientX - x0, dy = t.clientY - y0;
+    if (!dragging) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { skip = true; return; }
+      if (Math.abs(dx) < 10) return;
+      dragging = true;
+      el.style.transition = 'none';
+    }
+    el.style.transform = `translateX(${dx * 0.6}px)`;
+  }, { passive: true });
+  const end = (e) => {
+    if (skip || !el.dataset.diaryDate) { if (dragging) reset(); dragging = false; return; }
     const t = e.changedTouches[0];
     const dx = t.clientX - x0, dy = t.clientY - y0;
-    if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6 || Date.now() - t0 > 700) return;
-    slideIn = dx < 0 ? 'next' : 'prev';
-    go(`#/day/${addDays(el.dataset.diaryDate, dx < 0 ? 1 : -1)}`, { replace: true });
-  }, { passive: true });
+    const wasDragging = dragging;
+    dragging = false;
+    const fast = Date.now() - t0 < 700;
+    const commit = e.type === 'touchend' && Math.abs(dy) < Math.abs(dx) * 0.6
+      && (Math.abs(dx) > window.innerWidth * 0.35 || (fast && Math.abs(dx) >= 70));
+    if (!commit) {
+      if (wasDragging) {
+        el.style.transition = 'transform .18s ease-out';
+        el.style.transform = '';
+        setTimeout(reset, 200);
+      }
+      return;
+    }
+    const dir = dx < 0 ? 1 : -1;
+    const date = el.dataset.diaryDate;
+    // Slide the old day out, then draw the new one in from the other side.
+    el.style.transition = 'transform .12s ease-in';
+    el.style.transform = `translateX(${-dir * window.innerWidth}px)`;
+    setTimeout(() => {
+      slideIn = dir > 0 ? 'next' : 'prev';
+      go(`#/day/${addDays(date, dir)}`, { replace: true });
+    }, 110);
+  };
+  el.addEventListener('touchend', end, { passive: true });
+  el.addEventListener('touchcancel', end, { passive: true });
   // Leaving the diary: stop reacting to swipes until it's shown again.
   window.addEventListener('hashchange', () => {
     const h = location.hash;
-    if (!(h === '' || h === '#/' || h.startsWith('#/day'))) delete el.dataset.diaryDate;
+    if (!(h === '' || h === '#/' || h.startsWith('#/day'))) { delete el.dataset.diaryDate; reset(); }
   });
 }
 
@@ -116,11 +151,16 @@ export async function renderDiary(el, dateParam) {
   bindDaySwipe(el);
   el.dataset.diaryDate = date;
   if (slideIn) {
-    el.classList.remove('slide-next', 'slide-prev');
+    // New day enters from the side the finger came from, with no fade (a fade looked like a blink).
+    el.style.transition = 'none';
+    el.style.transform = `translateX(${slideIn === 'next' ? '' : '-'}${Math.round(window.innerWidth * 0.5)}px)`;
     void el.offsetWidth;
-    el.classList.add(slideIn === 'next' ? 'slide-next' : 'slide-prev');
-    setTimeout(() => el.classList.remove('slide-next', 'slide-prev'), 300);
+    el.style.transition = 'transform .2s ease-out';
+    el.style.transform = '';
+    setTimeout(() => { el.style.transition = ''; }, 220);
     slideIn = null;
+  } else {
+    el.style.transform = '';
   }
 
   $$('[data-day]', el).forEach((b) => b.addEventListener('click', () => go(`#/day/${b.dataset.day}`, { replace: true })));
