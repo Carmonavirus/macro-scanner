@@ -14,6 +14,7 @@ export const PRICES_CHECKED = '2026-11-03';
 
 const RAW = {
   mcd: {
+    searchSite: 'mcdonalds.com/de', fsBrand: "McDonald's",
     badge: 'McD', color: '#da291c', name: "McDonald's", emoji: '🍔',
     site: 'https://www.mcdonalds.com/de/de-de.html', nutritionSrc: 'https://mcdomenu.de/kalorien-naehrwerte/', priceSrc: 'https://burgerpreise.de/mc-donalds-preise/',
     dishes: [
@@ -43,6 +44,7 @@ const RAW = {
     ],
   },
   bk: {
+    searchSite: 'burgerking.de', fsBrand: "Burger King",
     badge: 'BK', color: '#f28c00', name: 'Burger King', emoji: '👑',
     site: 'https://www.burgerking.de/', nutritionSrc: 'https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/burger-king', priceSrc: 'https://burgerpreise.de/burger-king-preise/',
     dishes: [
@@ -66,6 +68,7 @@ const RAW = {
     ],
   },
   kfc: {
+    searchSite: 'kfc.de', fsBrand: "KFC",
     badge: 'KFC', color: '#c8102e', name: 'KFC', emoji: '🍗',
     site: 'https://www.kfc.de/', nutritionSrc: 'https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/kfc', priceSrc: 'https://burgerpreise.de/kfc-preise/',
     dishes: [
@@ -86,6 +89,7 @@ const RAW = {
     ],
   },
   subway: {
+    searchSite: 'subway.com/de-de', fsBrand: "Subway",
     badge: 'SUB', color: '#008c3a', name: 'Subway', emoji: '🥖',
     site: 'https://www.subway.com/de-DE', nutritionSrc: 'https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/subway', priceSrc: 'https://burgerpreise.de/subway-preise/',
     dishes: [
@@ -108,6 +112,7 @@ const RAW = {
     ],
   },
   dd: {
+    searchSite: '', fsBrand: "Dean&David",
     badge: 'd&d', color: '#2b2b2b', name: 'dean&david', emoji: '🥗',
     site: 'https://www.deananddavid.com/', nutritionSrc: 'https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/dean-david', priceSrc: 'https://www.speisekarte.de/berlin/restaurant/deandavid_bowls_salate_curries_snacks_in_berlin_schlossstrasse/speisekarte',
     dishes: [
@@ -124,7 +129,7 @@ const RAW = {
 };
 
 // Plain text badges (initials in a colour), not logos: those are the chains' trademarks.
-export const CHAINS = Object.entries(RAW).map(([id, c]) => ({ id, name: c.name, emoji: c.emoji, badge: c.badge, color: c.color, site: c.site, nutritionSrc: c.nutritionSrc, priceSrc: c.priceSrc }));
+export const CHAINS = Object.entries(RAW).map(([id, c]) => ({ id, name: c.name, emoji: c.emoji, badge: c.badge, color: c.color, site: c.site, nutritionSrc: c.nutritionSrc, priceSrc: c.priceSrc, searchSite: c.searchSite, fsBrand: c.fsBrand }));
 export const chainById = (id) => CHAINS.find((c) => c.id === id) || { id, name: id === 'own' ? 'My dish' : id, emoji: '⭐', badge: '★', color: '#6b6b6b' };
 
 const slug = (s) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -223,6 +228,23 @@ export function partsLabel(parts) {
   const counts = new Map();
   for (const p of parts) counts.set(p.name, (counts.get(p.name) || 0) + 1);
   return [...counts].map(([n, c]) => (c > 1 ? `${c}× ${n}` : n)).join(' + ');
+}
+
+/**
+ * Links for one dish: `menu` finds the item on the chain's own website (a web search limited to
+ * their site, because the chains' item addresses change too often to link directly), `nutrition`
+ * opens where its numbers came from (the McDonald's table, otherwise the item in FatSecret).
+ */
+export function dishLinks(d) {
+  const c = chainById(d.chain);
+  if (!c.fsBrand) return null;
+  const g = (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+  return {
+    menuLabel: c.searchSite ? c.searchSite.split('/')[0] : c.name,
+    menu: g(c.searchSite ? `site:${c.searchSite} ${d.name}` : `${c.name} ${d.name}`),
+    nutrition: d.chain === 'mcd' ? c.nutritionSrc
+      : `https://www.fatsecret.de/Kalorien-Ern%C3%A4hrung/search?q=${encodeURIComponent(`${c.fsBrand} ${d.name}`)}`,
+  };
 }
 
 /** A dish as a diary item: { code, name, brand, unit, grams, per100 }. */

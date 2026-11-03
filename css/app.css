@@ -574,3 +574,5 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .eat-price { color: var(--text); }
 .eat-links { margin-top: 2px; }
 .history .eat-links a { display: inline; padding: 0; border: 0; border-radius: 0; background: none; color: var(--muted); text-decoration: underline; }
+.eat-links { display: block; }
+.eat-part { color: var(--text); }
