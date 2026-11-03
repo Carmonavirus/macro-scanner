@@ -21,6 +21,8 @@ import java.time.LocalDate;
 final class Data {
     static final String APP_URL = "https://carmonavirus.github.io/macro-scanner/";
     private static final String FILE = "macro-scanner-backup.json";
+    /** Daily step counts, written by this app next to the backup so Macro Scanner can show them. */
+    private static final String STEPS_FILE = "macro-scanner-steps.json";
     private static final String PREFS = "macro";
 
     private Data() {}
@@ -40,6 +42,8 @@ final class Data {
         double gKcal, gProtein, gCarbs, gFat;      // 0 = no goal
         String accent, goal, cProtein, cCarbs, cFat; // custom colours from the app, or null
         long updatedAt;
+        long steps = -1;          // -1 = unknown
+        long stepsAt;
         String error;
     }
 
@@ -55,6 +59,10 @@ final class Data {
         t.cProtein = p.getString("cProtein", null); t.cCarbs = p.getString("cCarbs", null); t.cFat = p.getString("cFat", null);
         t.updatedAt = p.getLong("updatedAt", 0);
         t.error = p.getString("error", null);
+        if (LocalDate.now().toString().equals(p.getString("stepsDate", null))) {
+            t.steps = p.getLong("steps", -1);
+            t.stepsAt = p.getLong("stepsAt", 0);
+        }
         // A new day started since the last fetch: show zeros until we know better.
         if (t.date != null && !t.date.equals(LocalDate.now().toString())) {
             t.kcal = t.protein = t.carbs = t.fat = 0;
@@ -76,14 +84,29 @@ final class Data {
         prefs(c).edit().clear().apply();
     }
 
+    /** Read today's steps from Health Connect into the cache. Returns them, or -1. */
+    static long readSteps(Context c) {
+        long steps = Steps.today(c);
+        if (steps >= 0) {
+            prefs(c).edit().putString("stepsDate", LocalDate.now().toString())
+                .putLong("steps", steps).putLong("stepsAt", System.currentTimeMillis()).apply();
+        }
+        return steps;
+    }
+
     /** Fetch the backup and recompute today's totals. Never throws; errors are stored. */
     static synchronized void refresh(Context c) {
         SharedPreferences p = prefs(c);
         String token = p.getString("token", null);
         String gist = p.getString("gist", null);
         if (token == null || gist == null) return;
+        long steps = readSteps(c);
         try {
-            JSONObject backup = readBackup(token, gist);
+            JSONObject gistJson = new JSONObject(get("https://api.github.com/gists/" + gist, token));
+            JSONObject backup = readBackup(gistJson, token);
+            if (steps >= 0) {
+                try { pushSteps(gistJson, token, gist, steps); } catch (Exception ignored) { /* try again next time */ }
+            }
             String today = LocalDate.now().toString();
             double kcal = 0, protein = 0, carbs = 0, fat = 0;
             JSONArray log = backup.optJSONArray("log");
@@ -157,8 +180,33 @@ final class Data {
         return null;
     }
 
-    private static JSONObject readBackup(String token, String gistId) throws Exception {
-        JSONObject gist = new JSONObject(get("https://api.github.com/gists/" + gistId, token));
+    /** Add today's steps to the steps file in the gist, if they changed. Keeps the last 400 days. */
+    private static void pushSteps(JSONObject gist, String token, String gistId, long steps) throws Exception {
+        String today = LocalDate.now().toString();
+        JSONObject data = new JSONObject();
+        JSONObject file = gist.getJSONObject("files").optJSONObject(STEPS_FILE);
+        if (file != null) {
+            try {
+                String text = file.optBoolean("truncated", false) ? get(file.getString("raw_url"), token) : file.getString("content");
+                data = new JSONObject(text);
+            } catch (Exception ignored) { /* start fresh */ }
+        }
+        JSONObject days = data.optJSONObject("days");
+        if (days == null) days = new JSONObject();
+        if (days.optLong(today, -1) == steps) return;
+        days.put(today, steps);
+        String cutoff = LocalDate.now().minusDays(400).toString();
+        java.util.List<String> old = new java.util.ArrayList<>();
+        for (java.util.Iterator<String> it = days.keys(); it.hasNext(); ) { String k = it.next(); if (k.compareTo(cutoff) < 0) old.add(k); }
+        for (String k : old) days.remove(k);
+        data.put("days", days);
+        data.put("updatedAt", java.time.Instant.now().toString());
+        data.put("source", "Health Connect");
+        JSONObject body = new JSONObject().put("files", new JSONObject().put(STEPS_FILE, new JSONObject().put("content", data.toString())));
+        send("PATCH", "https://api.github.com/gists/" + gistId, token, body.toString());
+    }
+
+    private static JSONObject readBackup(JSONObject gist, String token) throws Exception {
         JSONObject file = gist.getJSONObject("files").optJSONObject(FILE);
         if (file == null) throw new Exception("The backup file is missing from your gist.");
         String text = file.optBoolean("truncated", false) ? get(file.getString("raw_url"), token) : file.getString("content");
@@ -166,7 +214,12 @@ final class Data {
     }
 
     private static String get(String url, String token) throws Exception {
+        return send("GET", url, token, null);
+    }
+
+    private static String send(String method, String url, String token, String body) throws Exception {
         HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
+        con.setRequestMethod(method); // Android's HttpURLConnection supports PATCH
         con.setConnectTimeout(8000);
         con.setReadTimeout(12000);
         con.setUseCaches(false);
@@ -175,6 +228,11 @@ final class Data {
         con.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
         con.setRequestProperty("Cache-Control", "no-cache");
         con.setRequestProperty("User-Agent", "MacroWidget");
+        if (body != null) {
+            con.setDoOutput(true);
+            con.setRequestProperty("Content-Type", "application/json");
+            try (java.io.OutputStream o = con.getOutputStream()) { o.write(body.getBytes(StandardCharsets.UTF_8)); }
+        }
         int code;
         try {
             code = con.getResponseCode();

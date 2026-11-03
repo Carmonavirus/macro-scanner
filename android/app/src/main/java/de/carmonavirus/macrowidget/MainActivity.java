@@ -23,6 +23,31 @@ public class MainActivity extends Activity {
         "https://github.com/settings/tokens/new?scopes=gist&description=Macro%20Widget";
 
     private LinearLayout box;
+    private static final int ASK_STEPS = 7;
+    private boolean askedSteps;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Health Connect lets apps read while they're on screen, so update steps now.
+        if (Data.connected(this) && Steps.allowed(this)) refreshThenRender();
+    }
+
+    private void refreshThenRender() {
+        new Thread(() -> {
+            Data.refresh(getApplicationContext());
+            MacroWidget.drawAll(getApplicationContext());
+            runOnUiThread(this::render);
+        }).start();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
+        super.onRequestPermissionsResult(code, perms, results);
+        if (code != ASK_STEPS) return;
+        askedSteps = true;
+        if (Steps.allowed(this)) refreshThenRender(); else render();
+    }
 
     @Override
     protected void onCreate(Bundle state) {
@@ -84,6 +109,7 @@ public class MainActivity extends Activity {
         text(t.error != null ? "Last update failed: " + t.error
             : "Connected. Today so far: " + Math.round(t.kcal) + " kcal · P " + MacroWidget.fmt(t.protein)
               + " g · C " + MacroWidget.fmt(t.carbs) + " g · F " + MacroWidget.fmt(t.fat) + " g");
+        stepsSection(t);
         text("Add the widget: long-press an empty spot on your home screen, tap Widgets, find Macro Widget "
             + "and drag “Today’s macros” onto the screen.\n\n"
             + "It updates about every 15 minutes. Tap the arrows on the widget to update right away. "
@@ -112,6 +138,42 @@ public class MainActivity extends Activity {
             MacroWidget.drawAll(this);
             render();
         });
+    }
+
+    private void stepsSection(Data.Today t) {
+        TextView h = text("Steps");
+        h.setTypeface(h.getTypeface(), android.graphics.Typeface.BOLD);
+        if (!Steps.supported()) {
+            text("Showing steps needs Android 14 or newer, where Health Connect is built in.");
+            return;
+        }
+        if (Steps.allowed(this)) {
+            text(t.steps >= 0
+                ? "Today: " + String.format(java.util.Locale.getDefault(), "%,d", t.steps) + " steps, from Health Connect. "
+                    + "They show on the widget and in Macro Scanner's diary."
+                : "Allowed. Steps appear after the next update.");
+            if (Build.VERSION.SDK_INT < 35) {
+                text("On Android 14 steps can only be read while this app is open, so the widget's step count updates "
+                    + "when you open Macro Widget.");
+            }
+            return;
+        }
+        text("Show today’s steps on the widget and in Macro Scanner. Health Connect adds up the steps from your phone, "
+            + "watch and fitness apps. They are only saved in your own private GitHub gist, next to your backup.");
+        Button allow = button("Show my steps");
+        allow.setOnClickListener(v -> requestPermissions(Steps.permissions(), ASK_STEPS));
+        if (askedSteps) {
+            text("Nothing changed? Allow “Steps” for Macro Widget in Health Connect:");
+            Button hc = button("Open Health Connect");
+            hc.setOnClickListener(v -> {
+                try {
+                    startActivity(new Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS")
+                        .putExtra(Intent.EXTRA_PACKAGE_NAME, getPackageName()));
+                } catch (Exception e) {
+                    try { startActivity(new Intent("android.health.connect.action.HEALTH_HOME_SETTINGS")); } catch (Exception ignored) { /* none */ }
+                }
+            });
+        }
     }
 
     private TextView title(String s) {
