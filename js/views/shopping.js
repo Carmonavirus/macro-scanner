@@ -6,6 +6,10 @@ import { fmt } from '../nutrition.js';
 import { $, $$, esc, toast } from '../ui.js';
 import { icon } from '../icons.js';
 import { emojiFor } from '../generic.js';
+import { STORES, getStore, setStore, storeSearchUrl } from '../stores.js';
+import { storePicker } from './storepick.js';
+
+let store = STORES[0];   // the shop picked under "Shop at" (EDEKA by default)
 
 const KEY = 'shoppingList';
 const getList = () => db.getSetting(KEY, null);
@@ -60,6 +64,7 @@ export async function addToShoppingList(items, fromName) {
 
 export async function renderShopping(el) {
   const [list, saved] = await Promise.all([getList(), db.getSavedMeals()]);
+  store = await getStore();
   if (list?.items?.length) return renderList(el, list, saved);
   renderPicker(el, saved, null);
 }
@@ -134,13 +139,14 @@ function renderList(el, list, saved) {
       <div class="meter shop-meter"><i style="width:${(done / list.items.length) * 100}%"></i></div>
       ${all ? `<button class="btn primary wide with-ic" id="btn-done">${icon('check')} Finish and delete list</button>` : ''}
     </section>
-    <ul class="supp-list shop-list card">${items.map((i) => `
-      <li><label class="supp${i.checked ? ' taken' : ''}">
+    ${storePicker(store)}
+    <ul class="supp-list shop-list card">${items.map((i) => { const s = storeSearchUrl(store, i.name); return `
+      <li class="shop-item"><label class="supp${i.checked ? ' taken' : ''}">
         <input type="checkbox" data-key="${esc(i.key)}" ${i.checked ? 'checked' : ''}>
         ${emojiFor(i.code) ? `<span class="shop-emoji" aria-hidden="true">${emojiFor(i.code)}</span>` : ''}
         <span class="supp-name">${esc(i.name)}</span>
         ${i.extra ? '' : `<span class="muted small">${esc(amount(i.grams, i.unit))}</span>`}
-      </label></li>`).join('')}
+      </label>${s ? `<a class="shop-store" href="${esc(s)}" target="_blank" rel="noopener" aria-label="Search ${esc(i.name)} at ${esc(store.name)}">${esc(store.name)} ↗</a>` : ''}</li>`; }).join('')}
     </ul>
     <form id="form-extra" class="manual-code" autocomplete="off">
       <input id="extra" placeholder="Add something else (e.g. Spülmittel)" aria-label="Add an item" maxlength="60">
@@ -151,6 +157,11 @@ function renderList(el, list, saved) {
       <button class="btn ghost danger with-ic" id="btn-delete">${icon('trash-2')} Delete list</button>
     </div>`;
 
+  $$('[data-store]', el).forEach((s) => s.addEventListener('change', async () => {
+    await setStore(s.value);
+    store = await getStore();
+    renderList(el, list, saved);
+  }));
   $$('[data-key]', el).forEach((cb) => cb.addEventListener('change', async () => {
     const it = list.items.find((i) => i.key === cb.dataset.key);
     it.checked = cb.checked;

@@ -10,9 +10,11 @@ import { today } from '../dates.js';
 import { geminiKey } from '../voice.js';
 import { renderAiCard } from './voice.js';
 import { addToShoppingList } from './shopping.js';
+import { storePicker, storeRow, bindStores } from './storepick.js';
+import { getStore } from '../stores.js';
 import {
   readRecipe, toDraft, saveDraft, cleanLink, textWithoutLink, MAX_MEDIA_BYTES,
-  myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName, isTranslated, languageName, texts,
+  myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName, useProduct, isTranslated, languageName, texts,
 } from '../social.js';
 
 // Show the translation (English) or the post's own language; remembered while the app is open.
@@ -194,7 +196,8 @@ export async function renderMyRecipe(el, id) {
   const r = await myRecipeById(id);
   if (!r) { el.innerHTML = '<p class="empty">Recipe not found.</p>'; return; }
   let portions = 1;
-  const per = myRecipeTotals(r);
+  let per = myRecipeTotals(r);
+  let store = await getStore();
   const draw = () => {
     const items = myRecipeItems(r, portions);
     const t = { kcal: per.kcal * portions, protein: per.protein * portions, carbs: per.carbs * portions, fat: per.fat * portions };
@@ -228,10 +231,12 @@ export async function renderMyRecipe(el, id) {
       </div>
       <section class="card">
         <h3 class="card-title">Ingredients</h3>
+        ${storePicker(store)}
         <ul class="recipe-ingredients">${items.map((i, n) => `
           <li ${tintAttrs(i.per100)}>
-            <span class="info"><span>${esc(i.name)}</span><span class="small muted">${tx.said[n] ? `“${esc(tx.said[n])}” · ` : ''}${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
-            <strong>${fmt(i.grams)} ${esc(i.unit)}</strong></li>`).join('')}
+            <span class="info"><span>${esc(i.name)}${i.brand ? ` <span class="muted small">· ${esc(i.brand)}</span>` : ''}</span><span class="small muted">${tx.said[n] ? `“${esc(tx.said[n])}” · ` : ''}${macroLine({ kcal: i.per100.kcal * i.grams / 100, protein: i.per100.protein * i.grams / 100, carbs: i.per100.carbs * i.grams / 100, fat: i.per100.fat * i.grams / 100 })}</span></span>
+            <strong>${fmt(i.grams)} ${esc(i.unit)}</strong>
+            ${storeRow(store, r.items[n].shopName || i.name, n)}</li>`).join('')}
         </ul>
         <p class="muted small">Amounts are for ${portions === 1 ? 'one portion' : `${portions} portions`}. “Quoted” text is what the post said for the whole recipe.</p>
       </section>
@@ -244,6 +249,11 @@ export async function renderMyRecipe(el, id) {
     $('[data-dec]', el).addEventListener('click', () => { portions = Math.max(1, portions - 1); draw(); });
     $('[data-inc]', el).addEventListener('click', () => { portions = Math.min(20, portions + 1); draw(); });
     $('#btn-lang', el)?.addEventListener('click', () => { view.original = !view.original; draw(); });
+    bindStores(el, r.items.map((i) => i.shopName || i.name), {
+      onStore: async () => { store = await getStore(); draw(); },
+      // Swap the ingredient for the shop's product: its macros replace the old ones.
+      onUse: async (n, p) => { await useProduct(r, n, p); per = myRecipeTotals(r); draw(); },
+    });
     $('#btn-log', el).addEventListener('click', async () => {
       const date = today();
       const meals = await db.mealsForDate(date);

@@ -176,6 +176,19 @@ export async function saveDraft(d) {
   return recipe;
 }
 
+/** Use a shop's product (from stores.js) for ingredient n, and keep it under Your foods. */
+export async function useProduct(r, n, p) {
+  const product = {
+    code: p.code, name: p.name, brand: p.brand || '', imageUrl: p.imageUrl || null, quantity: p.quantity || null,
+    per100: { ...p.per100 }, unit: p.unit || 'g', source: 'off', fetchedAt: new Date().toISOString(),
+  };
+  if (!(await db.getProduct(p.code))) await db.putProduct(product);
+  const old = r.items[n];
+  // shopName keeps searching for the plain food ("Hähnchenbrust"), not the brand product's long name.
+  r.items[n] = { ...old, code: p.code, name: p.name, brand: p.brand || '', unit: product.unit, per100: product.per100, shopName: old.shopName || old.name };
+  await db.setSetting(KEY, (await getMyRecipes()).map((x) => (x.id === r.id ? r : x)));
+}
+
 export async function deleteMyRecipe(id) {
   await db.setSetting(KEY, (await getMyRecipes()).filter((r) => r.id !== id));
 }

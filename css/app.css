@@ -613,3 +613,25 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .import-review p { margin: 0; }
 .import-source { margin-bottom: 12px; text-decoration: none; }
 .lang-toggle { margin: 0 0 12px; }
+
+/* Shop at: products for recipe ingredients */
+.store-pick { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: .9rem; color: var(--muted); white-space: nowrap; }
+.store-pick .ic { width: 18px; height: 18px; }
+.store-pick select { font: inherit; color: var(--text); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+.recipe-ingredients li { flex-wrap: wrap; }
+.store-row { flex-basis: 100%; display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.store-row .btn.small { min-height: 32px; padding: 4px 10px; font-size: .85rem; }
+.store-link { color: var(--accent); text-decoration: none; }
+.store-out { flex-basis: 100%; margin-top: 6px; }
+.store-out[hidden] { display: none; }
+.store-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.store-list li { display: flex; align-items: center; gap: 10px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; flex-wrap: nowrap; }
+.store-list img, .store-noimg { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: #fff; flex: none; display: grid; place-items: center; }
+.store-noimg { background: var(--line); }
+.store-list .info { flex: 1; min-width: 0; display: grid; color: inherit; text-decoration: none; }
+.store-list .info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.store-own { color: var(--accent); font-weight: 600; }
+.shop-list li.shop-item { display: flex; align-items: center; gap: 8px; }
+.shop-list li.shop-item > label { flex: 1; min-width: 0; }
+.shop-store { flex: none; color: var(--accent); text-decoration: none; font-size: .85rem; padding: 6px; }
+.store-pick select { flex: 0 1 auto; min-width: 0; }
