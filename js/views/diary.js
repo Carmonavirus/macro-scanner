@@ -116,7 +116,10 @@ export async function renderDiary(el, dateParam) {
         <a href="#/goals">${hasGoals ? 'Edit goals' : 'Set goals'}</a>
       </div>
       ${date === today() && goals.kcal > 0 && goals.kcal - day.kcal >= 250 ? `<a class="eat-link" href="#/eatout">${icon('hamburger')} Eat out: what fits ${fmt(goals.kcal - day.kcal, 'kcal')} kcal</a>` : ''}
-      ${steps !== null ? `<div class="steps-line">${icon('footprints')}<strong>${steps.toLocaleString()}</strong> steps · <strong>≈ ${stepKcal(steps, body)}</strong> kcal burned${body.weight > 0 ? '' : ' <a class="small" href="#/goals">(add your weight)</a>'}${stepsTime ? `<span class="muted small">· updated ${stepsTime}</span>` : ''}</div>` : ''}
+      ${steps !== null ? `<div class="steps-line"${stepsTime ? ` title="Updated ${stepsTime}"` : ''}>
+        <span class="steps-part" aria-label="${steps.toLocaleString()} steps">${icon('footprints')}<strong>${steps.toLocaleString()}</strong></span>
+        <span class="steps-part burn" aria-label="about ${stepKcal(steps, body)} kcal burned">${icon('flame')}<strong>${stepKcal(steps, body)}</strong><span class="muted">kcal</span></span>
+      </div>` : ''}
     </section>
 
     ${allMeals.map((meal) => {
