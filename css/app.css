@@ -511,3 +511,9 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 .meal.collapsed .entries, .meal.collapsed .btn.add { display: none; }
 .meal-count { display: none; }
 .meal.collapsed .meal-count { display: inline; }
+
+/* ---------- v27: swipe between days ---------- */
+@keyframes slide-next { from { transform: translateX(40px); opacity: .3; } to { transform: none; opacity: 1; } }
+@keyframes slide-prev { from { transform: translateX(-40px); opacity: .3; } to { transform: none; opacity: 1; } }
+#view.slide-next { animation: slide-next .22s ease-out; }
+#view.slide-prev { animation: slide-prev .22s ease-out; }
