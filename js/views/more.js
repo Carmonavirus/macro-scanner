@@ -77,6 +77,7 @@ export function renderMore(el) {
         <li>Open <strong>Macro Widget</strong>, paste your GitHub token (the same one as for cloud backup) and tap Connect.</li>
         <li>Tap <strong>Add widget to home screen</strong>, or long-press your home screen › Widgets › Macro Widget.</li>
       </ol>
+      <p class="muted small with-ic">${icon('footprints')} <span>For your daily steps, tap <strong>Show my steps</strong> in Macro Widget and allow it in Health Connect (Android 14 or newer). They then show on the widget and in the diary.</span></p>
     </section>
 
     <section class="card">

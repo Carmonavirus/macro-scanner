@@ -122,6 +122,16 @@ export async function backupNow() {
   return running;
 }
 
+/** Text of another file in the backup gist (e.g. steps written by Macro Widget), or null. */
+export async function readGistFile(name) {
+  const cfg = load();
+  if (!cfg?.token) return null;
+  const gist = await gh(`/gists/${cfg.gistId}`, { token: cfg.token });
+  const file = gist.files?.[name];
+  if (!file) return null;
+  return file.truncated ? (await fetch(file.raw_url, { cache: 'no-store' })).text() : file.content;
+}
+
 /** Restore from the cloud into this phone (merges; nothing local is deleted). */
 export async function restoreNow() {
   const cfg = load();

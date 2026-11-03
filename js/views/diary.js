@@ -9,12 +9,17 @@ import { installBanner, backupBanner } from './more.js';
 import { supplementsCard, bindSupplements } from './supplements.js';
 import { workoutsCard } from './hevy.js';
 import { icon } from '../icons.js';
+import { stepsOn, stepsUpdatedAt, refreshSteps } from '../steps.js';
 
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
   const [meals, entries, goals, supps, workouts] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals(), supplementsCard(date), workoutsCard(date)]);
   const hasGoals = Object.values(goals).some((g) => g > 0);
   const day = totals(entries);
+  const steps = stepsOn(date);
+  const stepsAt = stepsUpdatedAt();
+  const stepsTime = date === today() && stepsAt ? new Date(stepsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  if (date === today()) refreshSteps();
 
   // Entries whose meal no longer exists (shouldn't happen, but never hide food)
   const known = new Set(meals.map((m) => m.id));
@@ -40,6 +45,7 @@ export async function renderDiary(el, dateParam) {
         ${splitBar(day) || '<span class="muted">Nothing logged yet</span>'}
         <a href="#/goals">${hasGoals ? 'Edit goals' : 'Set goals'}</a>
       </div>
+      ${steps !== null ? `<div class="steps-line">${icon('footprints')}<strong>${steps.toLocaleString()}</strong> steps${stepsTime ? `<span class="muted small">· updated ${stepsTime}</span>` : ''}</div>` : ''}
     </section>
 
     ${allMeals.map((meal) => {

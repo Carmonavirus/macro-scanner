@@ -112,6 +112,7 @@ startAutoSync();
 hevyAutoSync();
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') hevyAutoSync(); });
 // New workouts from Hevy: refresh the diary if it's on screen
+window.addEventListener('stepsupdated', () => { const n = parseHash().parts[0] || ''; if (n === '' || n === 'day') route(); });
 window.addEventListener('hevyupdated', () => { const n = parseHash().parts[0] || ''; if (n === '' || n === 'day') route(); });
 
 if ('serviceWorker' in navigator) {

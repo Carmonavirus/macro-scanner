@@ -94,6 +94,14 @@ public class MacroWidget extends AppWidgetProvider {
         else status = "Updated " + DateFormat.getTimeInstance(DateFormat.SHORT).format(new Date(t.updatedAt));
         v.setTextViewText(R.id.status, status);
 
+        // steps from Health Connect (only when the user allowed it)
+        if (t.steps >= 0) {
+            v.setTextViewText(R.id.steps, "\uD83D\uDC5F " + String.format(Locale.getDefault(), "%,d", t.steps) + " steps");
+            v.setViewVisibility(R.id.steps, android.view.View.VISIBLE);
+        } else {
+            v.setViewVisibility(R.id.steps, android.view.View.GONE);
+        }
+
         // taps: the widget opens Macro Scanner (or this app to connect), the arrows refresh
         // OpenApp picks the installed app over the browser when it's there.
         Intent open = new Intent(c, Data.connected(c) ? OpenApp.class : MainActivity.class);
