@@ -152,6 +152,14 @@ public class MainActivity extends Activity {
                 ? "Today: " + String.format(java.util.Locale.getDefault(), "%,d", t.steps) + " steps, from Health Connect. "
                     + "They show on the widget and in Macro Scanner's diary."
                 : "Allowed. Steps appear after the next update.");
+            if (t.steps == 0) {
+                text("Health Connect has no steps for today yet. That usually means no app on this phone is "
+                    + "writing steps into Health Connect. Open Health Connect › App permissions, pick your step app "
+                    + "(e.g. StepsApp, Google Fit or Samsung Health) and allow it to write Steps, or turn on "
+                    + "Health Connect sync in that app's settings.");
+            }
+            Button hcOpen = button("Open Health Connect");
+            hcOpen.setOnClickListener(v -> openHealthConnect());
             if (Build.VERSION.SDK_INT < 35) {
                 text("On Android 14 steps can only be read while this app is open, so the widget's step count updates "
                     + "when you open Macro Widget.");
@@ -165,14 +173,18 @@ public class MainActivity extends Activity {
         if (askedSteps) {
             text("Nothing changed? Allow “Steps” for Macro Widget in Health Connect:");
             Button hc = button("Open Health Connect");
-            hc.setOnClickListener(v -> {
-                try {
-                    startActivity(new Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS")
-                        .putExtra(Intent.EXTRA_PACKAGE_NAME, getPackageName()));
-                } catch (Exception e) {
-                    try { startActivity(new Intent("android.health.connect.action.HEALTH_HOME_SETTINGS")); } catch (Exception ignored) { /* none */ }
-                }
-            });
+            hc.setOnClickListener(v -> openHealthConnect());
+        }
+    }
+
+    private void openHealthConnect() {
+        try {
+            startActivity(new Intent("android.health.connect.action.HEALTH_HOME_SETTINGS"));
+        } catch (Exception e) {
+            try {
+                startActivity(new Intent("android.health.connect.action.MANAGE_HEALTH_PERMISSIONS")
+                    .putExtra(Intent.EXTRA_PACKAGE_NAME, getPackageName()));
+            } catch (Exception ignored) { /* none */ }
         }
     }
 
