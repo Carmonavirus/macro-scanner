@@ -16,6 +16,34 @@ const COLLAPSED_KEY = 'collapsedMeals';
 const getCollapsed = () => { try { return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY)) || []); } catch { return new Set(); } };
 const setCollapsed = (set) => { try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set])); } catch { /* ignore */ } };
 
+// Swipe left/right anywhere on the diary to go to the next/previous day.
+// Swipes that start on a food row are left alone (those open the Delete button).
+let slideIn = null;
+function bindDaySwipe(el) {
+  if (el.dataset.daySwipe) return;
+  el.dataset.daySwipe = '1';
+  let x0 = 0, y0 = 0, t0 = 0, skip = true;
+  el.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    skip = e.touches.length > 1 || !el.dataset.diaryDate
+      || !!e.target.closest('.swipe, input, select, textarea, dialog, .amount-slider');
+    x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+  }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    if (skip || !el.dataset.diaryDate) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - x0, dy = t.clientY - y0;
+    if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6 || Date.now() - t0 > 700) return;
+    slideIn = dx < 0 ? 'next' : 'prev';
+    go(`#/day/${addDays(el.dataset.diaryDate, dx < 0 ? 1 : -1)}`, { replace: true });
+  }, { passive: true });
+  // Leaving the diary: stop reacting to swipes until it's shown again.
+  window.addEventListener('hashchange', () => {
+    const h = location.hash;
+    if (!(h === '' || h === '#/' || h.startsWith('#/day'))) delete el.dataset.diaryDate;
+  });
+}
+
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
   const [meals, entries, goals, supps, workouts] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals(), supplementsCard(date), workoutsCard(date)]);
@@ -85,6 +113,15 @@ export async function renderDiary(el, dateParam) {
     ${supps}
   `;
   bindSupplements(el, date);
+  bindDaySwipe(el);
+  el.dataset.diaryDate = date;
+  if (slideIn) {
+    el.classList.remove('slide-next', 'slide-prev');
+    void el.offsetWidth;
+    el.classList.add(slideIn === 'next' ? 'slide-next' : 'slide-prev');
+    setTimeout(() => el.classList.remove('slide-next', 'slide-prev'), 300);
+    slideIn = null;
+  }
 
   $$('[data-day]', el).forEach((b) => b.addEventListener('click', () => go(`#/day/${b.dataset.day}`, { replace: true })));
   $('#pick-date', el).addEventListener('change', (e) => {
