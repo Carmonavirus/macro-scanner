@@ -195,8 +195,13 @@ function sameFood(p, it) {
   const main = fold(it.de).split(/\s+/).find((w) => w.length > 2 && !STOP.has(w));
   if (!main) return true;
   // A cut or form of the same food still counts: "Hähnchenbrustfilet" is "Hähnchenbrust".
-  const base = main.replace(/(filets?|fleisch|stucke|streifen|wurfel|scheiben|medaillons)$/, '');
-  return fold(`${p.name} ${p.brand || ''}`).replace(/\s+/g, '').includes(base.length > 3 ? base : main);
+  const cut = (w) => w.replace(/(filets?|fleisch|stucke|streifen|wurfel|scheiben|medaillons)$/, '');
+  const base = cut(main);
+  const hay = fold(`${p.name} ${p.brand || ''}`).replace(/\s+/g, '');
+  if (!hay.includes(base.length > 3 ? base : main)) return false;
+  // "Süßkartoffel-Gnocchi" is gnocchi, not sweet potato: every part of a joined name has to be there.
+  const parts = String(it.de || '').trim().split(/\s+/)[0].split('-').map((x) => cut(fold(x).replace(/\s+/g, ''))).filter((x) => x.length > 3 && !STOP.has(x));
+  return parts.length < 2 || parts.every((x) => hay.includes(x));
 }
 
 /**
