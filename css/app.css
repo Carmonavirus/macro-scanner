@@ -683,3 +683,11 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .daybar-chips { margin: 4px 0 10px; }
 .daybar-preview { margin: 0 0 8px; }
 .daybar-preview + .daymini.inline { position: static; margin: 0; }
+/* Spinner next to "working on it" messages */
+.busy::before, .auto-busy::before {
+  content: ''; display: inline-block; width: .9em; height: .9em; margin-right: .45em; vertical-align: -.12em;
+  border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite;
+}
+.status.busy { color: var(--text); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .busy::before, .auto-busy::before { animation-duration: 2.4s; } }

@@ -14,6 +14,7 @@
 // #/colours                        pick app, macro and goal colours
 // #/more                           install, backup, about
 
+import './busy.js';
 import { $, $$, parseHash, setNavigateHandler, go, depth, nav } from './ui.js';
 import { renderDiary } from './views/diary.js';
 import { renderAdd, renderProduct, renderEdit, renderEntry, stopCamera } from './views/food.js';

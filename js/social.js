@@ -84,6 +84,29 @@ const toBase64 = (file) => new Promise((resolve, reject) => {
   r.readAsDataURL(file);
 });
 
+/**
+ * Screenshots straight off a phone are big (1080 x 2400 or more). Gemini reads text just as well
+ * at a smaller size, and a smaller picture uploads and gets read faster.
+ */
+const MAX_SIDE = 1800;
+async function shrinkImage(file) {
+  if (!/^image\/(png|jpe?g|webp|heic|heif)$/i.test(file.type) || typeof createImageBitmap !== 'function') return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height));
+    if (scale === 1 && file.size < 900 * 1024) { bmp.close?.(); return file; }
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * scale);
+    c.height = Math.round(bmp.height * scale);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    bmp.close?.();
+    const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
+    return blob && blob.size < file.size ? new File([blob], file.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }) : file;
+  } catch { return file; }
+}
+
+const SCREENSHOTS_HINT = (n) => `You get ${n} pictures. They are most likely screenshots of the same post taken one after the other while scrolling, so they overlap: the end of one picture is often repeated at the top of the next. Read them in order as ONE text, join them where they overlap, and list every ingredient and every step only once. Only list something twice if the post itself lists it twice.`;
+
 // What Gemini gets told about where the post comes from.
 const PLATFORM_HINT = {
   youtube: `This is a YouTube video, and you get the video itself. Watch and listen to all of it: take the ingredients, the amounts and the steps from what is said, from text shown on screen and from what you see being added. Use the description too if it is given. Amounts said in the video count as written ones ("said" is then what is said, in the video's language).`,
@@ -134,20 +157,26 @@ export const textWithoutLink = (s) => String(s || '').replace(/https?:\/\/[^\s<>
  * Ask Gemini for the recipe. `files` are File objects (video or images).
  * Resolves the raw recipe JSON, or throws with a readable message.
  */
-export async function readRecipe({ link, caption, files = [], platform = '', onRetry }) {
+export async function readRecipe({ link, caption, files = [], platform = '', onRetry, onStep }) {
   const key = geminiKey();
   if (!key) throw new Error('Connect Google Gemini first.');
+  if (files.some((f) => f.type.startsWith('image'))) onStep?.('prepare');
+  files = await Promise.all(files.map(shrinkImage));
   const size = files.reduce((n, f) => n + f.size, 0);
   if (size > MAX_MEDIA_BYTES) throw new Error('The video or pictures are too big (over 14 MB). Use a shorter clip or a few screenshots instead.');
   const where = platform || platformOf(link) || 'other';
   const video = where === 'youtube' ? youtubeUrl(link) : '';
-  const hint = PLATFORM_HINT[where] ? `\n\n${PLATFORM_HINT[where]}` : '';
+  const pics = files.filter((f) => f.type.startsWith('image')).length;
+  const hint = (PLATFORM_HINT[where] ? `\n\n${PLATFORM_HINT[where]}` : '') + (pics > 1 ? `\n\n${SCREENSHOTS_HINT(pics)}` : '');
   const parts = [{ text: `${PROMPT}${hint}\n\nLink to the post: ${link || '(none)'}\n${where === 'youtube' ? 'Description' : 'Caption'}:\n${caption || '(none given)'}` }];
   // Gemini watches public YouTube videos itself from the link.
   if (video) parts.push({ fileData: { fileUri: video } });
+  // All pictures go in one request.
   for (const f of files) parts.push({ inlineData: { mimeType: f.type || 'application/octet-stream', data: await toBase64(f) } });
 
-  return generateJson(key, parts, SCHEMA, { temperature: 0.2, onRetry });
+  onStep?.('gemini');
+  // Reading a recipe needs little thinking; a smaller budget answers much sooner.
+  return generateJson(key, parts, SCHEMA, { temperature: 0.2, onRetry, thinking: 1024 });
 }
 
 const fold = (x) => String(x || '').toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss')
