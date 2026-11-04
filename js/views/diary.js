@@ -251,7 +251,10 @@ export async function renderDiary(el, dateParam) {
     const meal = meals.find((m) => m.id === b.dataset.mealMenu);
     const items = entries.filter((e) => e.meal === meal.id);
     const choice = await actionSheet(meal.name, [
-      ...(items.length ? [{ value: 'save', label: 'Save as meal for later', icon: 'bookmark-plus' }] : []),
+      ...(items.length ? [
+        { value: 'portions', label: 'Cooked for more than one portion', icon: 'cooking-pot' },
+        { value: 'save', label: 'Save as meal for later', icon: 'bookmark-plus' },
+      ] : []),
       { value: 'rename', label: 'Rename', icon: 'pencil' },
       { value: 'delete', label: 'Delete meal', icon: 'trash-2', danger: true },
     ], icon);
@@ -260,6 +263,28 @@ export async function renderDiary(el, dateParam) {
       if (!name) return;
       await db.saveMeal(name.slice(0, 50), items);
       toast(`Saved “${name.slice(0, 50)}”. Find it under Add food.`);
+      return;
+    }
+    if (choice === 'portions') {
+      // Batch cooking: everything logged is the whole pot. Keep one portion today and save
+      // one portion as a meal, to add on the days the rest gets eaten.
+      const n = Number(await actionSheet('How many portions is all of it?', [2, 3, 4, 5, 6].map((k) => ({ value: String(k), label: `${k} portions (you eat 1/${k})` })), icon));
+      if (!(n > 1)) return;
+      const name = prompt('Name of the dish (e.g. Chicken curry)', `My ${meal.name.toLowerCase()}`)?.trim().slice(0, 50);
+      if (!name) return;
+      const portion = items.map((e) => ({ ...e, grams: Math.round((e.grams / n) * 10) / 10 }));
+      const group = `g${Date.now().toString(36)}`;
+      for (const e of portion) await db.putEntry({ ...e, group, groupName: `${name} · 1 of ${n} portions` });
+      const savedMeal = await db.saveMeal(name, portion, { portions: n });
+      renderDiary(el, date);
+      toast(`Today has 1 of ${n} portions. Add the rest later under Add food › Saved meals › ${name}.`, { ms: 9000,
+        action: 'Undo',
+        onAction: async () => {
+          for (const e of items) await db.putEntry(e);
+          await db.setSavedMeals((await db.getSavedMeals()).filter((s) => s.id !== savedMeal.id));
+          renderDiary(el, date);
+        },
+      });
       return;
     }
     if (choice === 'rename') {

@@ -2,6 +2,7 @@
 import { esc } from '../ui.js';
 
 export const CHANGES = [
+  { v: 'v61', date: '2026-11-04', items: ['Cooked for more than one day? In a meal’s ⋯ menu, pick “Cooked for more than one portion”: today keeps 1 portion and the rest is saved as a meal to add on another day.'] },
   { v: 'v60', date: '2026-11-04', items: ['The diary shows the time you logged each food. A recipe or saved meal shows its time once, above its ingredients.'] },
   { v: 'v59', date: '2026-11-04', items: ['Tap the version in the top-right corner to see what changed in each version.'] },
   { v: 'v58', date: '2026-11-04', items: ['Recipe import: when there’s only Gemini’s guess for an ingredient, the app looks it up on Open Food Facts and picks the real product.', '“Süßkartoffel-Gnocchi” no longer matches plain sweet potato.'] },

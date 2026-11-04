@@ -142,7 +142,7 @@ export async function renderAdd(el, date, mealId) {
       const tot = totals(s.items);
       return `<li class="saved-meal"><button type="button" class="saved-add" data-saved="${esc(s.id)}">
         <span class="info"><strong>${esc(s.name)}</strong>
-          <span class="small muted saved-items">${fmt(tot.kcal, 'kcal')} kcal · P ${fmt(tot.protein)} · ${s.items.length} item${s.items.length === 1 ? '' : 's'}: ${esc(s.items.map((i) => i.name).join(', '))}</span></span>
+          <span class="small muted saved-items">${s.portions ? `1 portion (of ${s.portions}) · ` : ''}${fmt(tot.kcal, 'kcal')} kcal · P ${fmt(tot.protein)} · ${s.items.length} item${s.items.length === 1 ? '' : 's'}: ${esc(s.items.map((i) => i.name).join(', '))}</span></span>
         <span class="saved-plus">${icon('plus')}</span>
       </button><button type="button" class="btn icon ghost" data-saved-del="${esc(s.id)}" aria-label="Delete saved meal ${esc(s.name)}">${icon('trash-2')}</button></li>`;
     }).join('');

@@ -140,10 +140,10 @@ export const setMealsForDate = (date, meals) => updateDay(date, { meals });
 export const getSavedMeals = () => getSetting('savedMeals', []);
 export const setSavedMeals = (list) => setSetting('savedMeals', list);
 
-export async function saveMeal(name, entries) {
+export async function saveMeal(name, entries, extra = {}) {
   const items = entries.map(({ code, name: n, brand, unit, grams, per100 }) => ({ code, name: n, brand: brand || '', unit: unit || 'g', grams, per100: { ...per100 } }));
   const list = await getSavedMeals();
-  const meal = { id: `sm${Date.now().toString(36)}`, name, items, createdAt: new Date().toISOString() };
+  const meal = { id: `sm${Date.now().toString(36)}`, name, items, createdAt: new Date().toISOString(), ...extra };
   await setSavedMeals([meal, ...list]);
   return meal;
 }
@@ -154,8 +154,9 @@ export async function saveMeal(name, entries) {
  */
 export async function logSavedMeal(saved, date, mealId, name = saved.name) {
   const group = saved.items.length > 1 ? `g${Date.now().toString(36)}` : null;
+  const label = saved.portions ? `${name} · 1 of ${saved.portions} portions` : String(name || '');
   for (const it of saved.items) {
-    await addEntry({ ...it, per100: { ...it.per100 }, date, meal: mealId, ...(group ? { group, groupName: String(name || '') } : {}) });
+    await addEntry({ ...it, per100: { ...it.per100 }, date, meal: mealId, ...(group ? { group, groupName: label } : {}) });
   }
 }
 
