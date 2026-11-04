@@ -185,3 +185,17 @@ export function bindAmountSlider(root, onChange) {
   });
   return { sync: () => { const v = parseNum(input.value) || 0; setMax(v); range.value = String(v); } };
 }
+
+/** The slim day total: kcal eaten / goal, kcal left, and P/C/F with their colours. */
+export function dayMiniHtml(day, goals) {
+  const g = goals || {};
+  const left = g.kcal > 0 ? g.kcal - day.kcal : null;
+  const part = (k, letter) => `<span class="dm-m dm-${k}"><i></i>${letter} <b>${fmt(day[k])}</b>${g[k] > 0 ? `<span>/${fmt(g[k])}</span>` : ''}</span>`;
+  return `
+    <div class="dm-line">
+      <span><b>${fmt(day.kcal, 'kcal')}</b>${g.kcal > 0 ? ` <span class="muted">/ ${fmt(g.kcal, 'kcal')}</span>` : ''} <span class="muted">kcal</span></span>
+      ${left === null ? '' : `<span class="dm-left${left < 0 ? ' over' : ''}">${left >= 0 ? `${fmt(left, 'kcal')} left` : `${fmt(-left, 'kcal')} over`}</span>`}
+    </div>
+    <div class="dm-macros">${part('protein', 'P')}${part('carbs', 'C')}${part('fat', 'F')}</div>
+    ${g.kcal > 0 ? `<span class="dm-meter"><i style="width:${Math.min(100, (day.kcal / g.kcal) * 100)}%"></i></span>` : ''}`;
+}

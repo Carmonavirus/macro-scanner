@@ -676,3 +676,4 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .dm-protein i { background: var(--protein); } .dm-carbs i { background: var(--carbs); } .dm-fat i { background: var(--fat); }
 .dm-meter { display: block; height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 2px; }
 .dm-meter i { display: block; height: 100%; background: var(--kcal); }
+.daymini.inline { position: sticky; left: auto; transform: none; width: auto; margin: 0 0 12px; cursor: default; }
