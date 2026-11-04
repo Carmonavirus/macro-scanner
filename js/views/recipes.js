@@ -182,7 +182,7 @@ export async function renderRecipe(el, id) {
       if (!pick) return;
       const meal = meals.find((m) => m.id === pick);
       // One portion goes in the diary even when cooking for more.
-      await db.logSavedMeal({ items: recipeItems(r, 1) }, date, pick);
+      await db.logSavedMeal({ items: recipeItems(r, 1) }, date, pick, r.name);
       toast(`Added 1 portion of ${r.name} to ${meal.name}`, { action: 'Open diary', onAction: () => { location.hash = '#/'; } });
     });
     $('#btn-save', el).addEventListener('click', async () => {

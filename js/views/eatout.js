@@ -169,7 +169,7 @@ export async function renderEatOut(el) {
     const meals = await db.mealsForDate(date);
     const pick = await actionSheet('Add to which meal today?', meals.map((m) => ({ value: m.id, label: m.name, icon: 'utensils' })), icon);
     if (!pick) return;
-    for (const p of o.parts) await db.addEntry({ ...dishItem(p), date, meal: pick });
+    await db.logSavedMeal({ items: o.parts.map(dishItem) }, date, pick, partsLabel(o.parts));
     toast(`Added ${partsLabel(o.parts)}`, { action: 'Open diary', onAction: () => { location.hash = '#/'; } });
     renderEatOut(el);
   });

@@ -104,6 +104,20 @@ function updateMini(day, goals) {
   checkMini();
 }
 
+/** "12:31" in the phone's own format. */
+const timeOf = (iso) => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); };
+
+/**
+ * Entries logged together: the same group, or (logged before groups existed) next to each
+ * other within a few seconds. Returns { first, size, name } for entry i.
+ */
+function groupOf(items, i) {
+  const same = (a, b) => (a.group || b.group ? a.group === b.group : !!a.at && !!b.at && Math.abs(new Date(a.at) - new Date(b.at)) < 3000);
+  let start = i; while (start > 0 && same(items[start - 1], items[start])) start--;
+  let end = i; while (end < items.length - 1 && same(items[end], items[end + 1])) end++;
+  return { first: start === i, size: end - start + 1, name: items[start].groupName || '' };
+}
+
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
   const [meals, entries, goals, supps, workouts] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals(), supplementsCard(date), workoutsCard(date)]);
@@ -161,10 +175,14 @@ export async function renderDiary(el, dateParam) {
           ${items.length ? `<span class="meal-kcal">${fmt(t.kcal, 'kcal')}<small> kcal</small></span>` : ''}
           ${meal.id === '_other' ? '' : `<button class="btn icon ghost" data-meal-menu="${esc(meal.id)}" aria-label="Meal options">${icon('ellipsis')}</button>`}
         </div>
-        ${items.length ? `<ul class="entries">${items.map((e) => {
+        ${items.length ? `<ul class="entries">${items.map((e, i) => {
           const v = entryMacros(e);
-          return `<li class="swipe" data-entry="${e.id}"><button type="button" class="swipe-del" tabindex="-1" aria-hidden="true">${icon('trash-2')}<span>Delete</span></button><a ${tintAttrs(e.per100, 'swipe-row')} draggable="false" href="#/entry/${e.id}">
-            <span class="info"><strong>${esc(e.name)}</strong><span class="muted small item-macros">${fmt(e.grams)} ${esc(e.unit || 'g')} · ${pmf(v)}</span></span>
+          // A dish logged in one go (recipe, saved meal) shows its time once above its ingredients.
+          const g = groupOf(items, i);
+          const head = g.first && g.size > 1 ? `<li class="entry-time">${icon('clock')}${esc(timeOf(e.at))}${g.name ? ` · ${esc(g.name)}` : ''}</li>` : '';
+          const when = g.size > 1 || !e.at ? '' : ` · ${esc(timeOf(e.at))}`;
+          return `${head}<li class="swipe" data-entry="${e.id}"><button type="button" class="swipe-del" tabindex="-1" aria-hidden="true">${icon('trash-2')}<span>Delete</span></button><a ${tintAttrs(e.per100, 'swipe-row')} draggable="false" href="#/entry/${e.id}">
+            <span class="info"><strong>${esc(e.name)}</strong><span class="muted small item-macros">${fmt(e.grams)} ${esc(e.unit || 'g')} · ${pmf(v)}${when}</span></span>
             <span class="kcal">${fmt(v.kcal, 'kcal')}<small> kcal</small></span></a></li>`;
         }).join('')}</ul>` : ''}
         ${meal.id === '_other' ? '' : `<button class="btn add" data-add="${esc(meal.id)}">${icon('plus')} Add food</button>`}

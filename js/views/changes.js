@@ -2,6 +2,7 @@
 import { esc } from '../ui.js';
 
 export const CHANGES = [
+  { v: 'v60', date: '2026-11-04', items: ['The diary shows the time you logged each food. A recipe or saved meal shows its time once, above its ingredients.'] },
   { v: 'v59', date: '2026-11-04', items: ['Tap the version in the top-right corner to see what changed in each version.'] },
   { v: 'v58', date: '2026-11-04', items: ['Recipe import: when there’s only Gemini’s guess for an ingredient, the app looks it up on Open Food Facts and picks the real product.', '“Süßkartoffel-Gnocchi” no longer matches plain sweet potato.'] },
   { v: 'v57', date: '2026-11-04', items: ['Faster imports from several screenshots: Gemini joins overlapping screenshots and pictures are made smaller first.', 'The import shows which step is running and for how long.', 'A spinner next to every “Loading…” message.'] },
