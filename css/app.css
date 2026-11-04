@@ -254,7 +254,7 @@ select { font: inherit; color: var(--text); background: var(--card); border: 1px
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ---------- v4: goals, sticky day total ---------- */
-.daybar { position: sticky; top: var(--topbar-h, 56px); z-index: 4; padding: 10px; box-shadow: 0 6px 12px -10px rgba(0,0,0,.35); }
+.daybar { padding: 10px; }
 .daybar .tiles { gap: 6px; margin-bottom: 6px; }
 .daybar .tile { padding: 8px 4px; }
 .daybar .tile .val { font-size: 1.2rem; }
@@ -659,3 +659,20 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .add-ing input { flex: 1; min-width: 0; font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
 .actions #btn-log { margin-bottom: 0; }
 .app-version { margin-left: auto; align-self: flex-start; font-size: .7rem; color: var(--muted); opacity: .8; white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Compact day total once the big one has scrolled away (diary) */
+.daymini {
+  position: fixed; z-index: 6; top: var(--topbar-h, 56px); left: 50%; transform: translateX(-50%);
+  width: min(528px, calc(100% - 32px)); box-sizing: border-box; padding: 7px 12px 9px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 14px -10px rgba(0,0,0,.45);
+  display: grid; gap: 3px; cursor: pointer; font-size: .9rem; font-variant-numeric: tabular-nums;
+}
+.daymini[hidden] { display: none; }
+.dm-line { display: flex; justify-content: space-between; gap: 8px; }
+.dm-left { color: var(--muted); }
+.dm-left.over { color: var(--error); }
+.dm-macros { display: flex; gap: 14px; font-size: .82rem; color: var(--muted); }
+.dm-m b { color: var(--text); font-weight: 600; }
+.dm-m i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: 0; }
+.dm-protein i { background: var(--protein); } .dm-carbs i { background: var(--carbs); } .dm-fat i { background: var(--fat); }
+.dm-meter { display: block; height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 2px; }
+.dm-meter i { display: block; height: 100%; background: var(--kcal); }
