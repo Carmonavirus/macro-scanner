@@ -148,9 +148,15 @@ export async function saveMeal(name, entries) {
   return meal;
 }
 
-/** Log every item of a saved meal into a day's meal. */
-export async function logSavedMeal(saved, date, mealId) {
-  for (const it of saved.items) await addEntry({ ...it, per100: { ...it.per100 }, date, meal: mealId });
+/**
+ * Log every item of a saved meal or recipe into a day's meal. The items share a group, so the
+ * diary shows the time once for the whole dish, not on each ingredient.
+ */
+export async function logSavedMeal(saved, date, mealId, name = saved.name) {
+  const group = saved.items.length > 1 ? `g${Date.now().toString(36)}` : null;
+  for (const it of saved.items) {
+    await addEntry({ ...it, per100: { ...it.per100 }, date, meal: mealId, ...(group ? { group, groupName: String(name || '') } : {}) });
+  }
 }
 
 export const getSupplements = () => getSetting('supplements', []);
