@@ -56,6 +56,7 @@ export async function renderAdd(el, date, mealId) {
     <p class="status" id="scan-status" role="status"></p>
 
     <a class="btn with-ic voice-cta" href="#/voice/${t.date}/${encodeURIComponent(t.meal.id)}">${icon('mic')} Say what you ate</a>
+    <a class="btn with-ic voice-cta" href="#/fits/${t.date}/${encodeURIComponent(t.meal.id)}">${icon('target')} What fits what’s left?</a>
 
     <form class="manual-code" id="form-code" autocomplete="off">
       <input id="input-code" inputmode="numeric" placeholder="…or type the barcode number" aria-label="Barcode number">

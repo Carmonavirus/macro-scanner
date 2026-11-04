@@ -33,6 +33,8 @@ const macroLine = (t) => `${fmt(t.kcal, 'kcal')} kcal · P ${fmt(t.protein)} · 
 export async function renderRecipes(el) {
   const mine = await getMyRecipes();
   el.innerHTML = `
+    <a class="card eat-cta" href="#/fits"><span class="thumb" aria-hidden="true">${icon('target')}</span>
+      <span class="info"><strong>What fits what’s left today?</strong><span class="small muted">Your recipes and saved meals that best match the calories and macros you have left</span></span>${icon('chevron-right')}</a>
     <a class="card eat-cta" href="#/eatout"><span class="thumb" aria-hidden="true">${icon('hamburger')}</span>
       <span class="info"><strong>No time to cook? Eat out</strong><span class="small muted">Dishes from McDonald’s, Burger King, KFC, Subway and dean&amp;david that fit what’s left today</span></span>${icon('chevron-right')}</a>
     <a class="card eat-cta" href="#/import"><span class="thumb" aria-hidden="true">${icon('chef-hat')}</span>
