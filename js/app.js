@@ -123,6 +123,17 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 window.addEventListener('stepsupdated', () => { const n = parseHash().parts[0] || ''; if (n === '' || n === 'day') route(); });
 window.addEventListener('hevyupdated', () => { const n = parseHash().parts[0] || ''; if (n === '' || n === 'day') route(); });
 
+// Version and release time in the corner, e.g. "v51 (4 Nov, 11:12)".
+{
+  const v = document.getElementById('app-version');
+  if (v && self.APP_VERSION) {
+    const when = new Date(self.APP_RELEASED);
+    const at = isNaN(when) ? '' : when.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    v.textContent = at ? `${self.APP_VERSION} (${at})` : self.APP_VERSION;
+    v.title = 'App version and when it was last updated';
+  }
+}
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then((reg) => {
     // Look for a new version whenever the app comes back to the front.
