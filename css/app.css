@@ -651,3 +651,10 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .to-buy { display: flex; gap: 5px; align-items: center; }
 .to-buy .ic, .to-buy svg { width: 13px; height: 13px; flex: none; color: var(--muted); }
 .store-row .ing-rm { margin-left: auto; min-height: 32px; width: 32px; padding: 0; color: var(--muted); }
+/* Same-size action buttons (My recipe) */
+.actions.even { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.actions.even .btn { justify-content: center; min-height: 48px; }
+/* Add an ingredient by hand on the check / edit screen */
+.add-ing { display: flex; gap: 8px; margin: 8px 0 16px; }
+.add-ing input { flex: 1; min-width: 0; font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+.actions #btn-log { margin-bottom: 0; }

@@ -149,7 +149,7 @@ export async function renderRecipe(el, id) {
         <div class="tile tile-carbs"><span class="val">${fmt(t.carbs)}</span><span class="unit">g</span><span class="lbl">Carbs</span></div>
         <div class="tile tile-fat"><span class="val">${fmt(t.fat)}</span><span class="unit">g</span><span class="lbl">Fat</span></div>
       </div>
-      <div class="actions">
+      <div class="actions even">
         <button class="btn primary with-ic" id="btn-log">${icon('plus')} Add to today</button>
         <button class="btn with-ic" id="btn-save">${icon('bookmark-plus')} Save as meal</button>
         <button class="btn with-ic" id="btn-shop">${icon('shopping-cart')} Shopping list</button>
