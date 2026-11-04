@@ -79,6 +79,39 @@ function bindDaySwipe(el) {
   });
 }
 
+// ---------- Compact day total: a slim bar under the title once the big one scrolls away ----------
+let mini = null;
+function checkMini() {
+  if (!mini) return;
+  const bar = document.querySelector('#view .daybar');
+  const top = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--topbar-h')) || 56;
+  mini.hidden = !bar || bar.getBoundingClientRect().bottom > top + 4;
+}
+function updateMini(day, goals) {
+  if (!mini) {
+    mini = document.createElement('div');
+    mini.className = 'daymini';
+    mini.hidden = true;
+    mini.setAttribute('role', 'button');
+    mini.setAttribute('aria-label', 'Day total, tap to scroll up');
+    mini.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    document.body.appendChild(mini);
+    window.addEventListener('scroll', checkMini, { passive: true });
+    window.addEventListener('hashchange', () => setTimeout(checkMini, 0));
+  }
+  const g = goals || {};
+  const left = g.kcal > 0 ? g.kcal - day.kcal : null;
+  const part = (k, letter) => `<span class="dm-m dm-${k}"><i></i>${letter} <b>${fmt(day[k])}</b>${g[k] > 0 ? `<span>/${fmt(g[k])}</span>` : ''}</span>`;
+  mini.innerHTML = `
+    <div class="dm-line">
+      <span><b>${fmt(day.kcal, 'kcal')}</b>${g.kcal > 0 ? ` <span class="muted">/ ${fmt(g.kcal, 'kcal')}</span>` : ''} <span class="muted">kcal</span></span>
+      ${left === null ? '' : `<span class="dm-left${left < 0 ? ' over' : ''}">${left >= 0 ? `${fmt(left, 'kcal')} left` : `${fmt(-left, 'kcal')} over`}</span>`}
+    </div>
+    <div class="dm-macros">${part('protein', 'P')}${part('carbs', 'C')}${part('fat', 'F')}</div>
+    ${g.kcal > 0 ? `<span class="dm-meter"><i style="width:${Math.min(100, (day.kcal / g.kcal) * 100)}%"></i></span>` : ''}`;
+  checkMini();
+}
+
 export async function renderDiary(el, dateParam) {
   const date = isValidKey(dateParam) ? dateParam : today();
   const [meals, entries, goals, supps, workouts] = await Promise.all([db.mealsForDate(date), db.entriesForDate(date), db.getGoals(), supplementsCard(date), workoutsCard(date)]);
@@ -152,6 +185,7 @@ export async function renderDiary(el, dateParam) {
 
     ${supps}
   `;
+  updateMini(day, goals);
   bindSupplements(el, date);
   bindDaySwipe(el);
   el.dataset.diaryDate = date;
