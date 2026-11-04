@@ -237,7 +237,8 @@ export async function saveDraft(d) {
   const items = [];
   let n = 0;
   for (const it of d.ingredients) {
-    let p = it.pick >= 0 ? it.choices[it.pick] : null;
+    const chosen = it.pick >= 0 ? it.choices[it.pick] : null;
+    let p = chosen;
     if (!p) continue;
     const src = p.estimate ? 'ai' : (p.source || '');
     const buy = buyName(p, it) || it.postName || '';
@@ -256,15 +257,63 @@ export async function saveDraft(d) {
     items.push({
       code: p.code, name: p.name, brand: p.brand || '', unit: p.unit || 'g', grams: it.grams / d.servings, per100: { ...p.per100 }, said: it.said, saidEn: it.saidEn, src,
       ...(postName ? { postName, buy, shopName: buy, targetPer100: { ...p.per100 } } : {}),
+      // The menu's other foods, so editing later offers the same choices.
+      options: it.choices.map((c) => (c === chosen ? p : c)).slice(0, 8).map(compact),
     });
   }
+  const all = await getMyRecipes();
+  const old = d.editId ? all.find((x) => x.id === d.editId) : null;
   const recipe = {
-    id: `my-${Date.now().toString(36)}`, name: d.title, servings: d.servings, minutes: d.minutes,
+    ...(old || {}),
+    id: old ? old.id : `my-${Date.now().toString(36)}`, name: d.title, servings: d.servings, minutes: d.minutes,
     link: d.link, steps: d.steps, notes: d.notes, items,
-    ...(isTranslated(d) ? { lang: d.lang, original: d.original } : {}), createdAt: new Date().toISOString(),
+    ...(d.stated ? { stated: d.stated, statedFor: d.statedFor || '' } : {}),
+    ...(isTranslated(d) ? { lang: d.lang, original: d.original } : {}), createdAt: old?.createdAt || new Date().toISOString(),
   };
-  await db.setSetting(KEY, [recipe, ...(await getMyRecipes())]);
+  await db.setSetting(KEY, old ? all.map((x) => (x.id === old.id ? recipe : x)) : [recipe, ...all]);
   return recipe;
+}
+
+const compact = (c) => ({
+  code: c.code, name: c.name, brand: c.brand || '', unit: c.unit || 'g', source: c.source || '', ...(c.estimate ? { estimate: true } : {}),
+  per100: { kcal: +c.per100.kcal || 0, protein: +c.per100.protein || 0, carbs: +c.per100.carbs || 0, fat: +c.per100.fat || 0 },
+});
+
+/**
+ * A saved recipe back on the check screen, to change its ingredients: each one keeps its
+ * food first, with the same other matches the import offered.
+ */
+export function draftFromRecipe(r, products) {
+  return {
+    editId: r.id, title: r.name, lang: r.lang || 'en', original: r.original || { title: '', steps: [] },
+    servings: r.servings || 1, minutes: r.minutes || 0, steps: r.steps || [], notes: r.notes || '', link: r.link || '', caption: '',
+    stated: r.stated || null, statedFor: r.statedFor || '',
+    ingredients: r.items.map((i) => {
+      const cur = { code: i.code, name: i.name, brand: i.brand || '', unit: i.unit || 'g', per100: { ...i.per100 }, source: i.src || '' };
+      const ask = { de: i.buy || i.name.split('·')[0], en: nameOf(i.saidEn), name: i.postName || '', buy: i.buy || '', said: i.said || '' };
+      // The choices the import offered (recipes saved before this was kept: look them up again).
+      const kept = (i.options || []).map((o) => ({ ...o, per100: { ...o.per100 } }));
+      const more = kept.length ? kept : [i.postName && { ...ask, de: i.postName }, ask].filter(Boolean)
+        .flatMap((a) => matchFood(a, products).filter((p) => fitsMine(p, a)));
+      const seen = new Set([i.code]);
+      const others = more.filter((p) => { const k = p.code || `est:${p.name}`; if (seen.has(k)) return false; seen.add(k); return true; });
+      return {
+        said: i.said || i.postName || i.name, saidEn: i.saidEn || '', postName: i.postName || '', buy: i.buy || '', brand: '', product: '', optional: false,
+        grams: Math.round(i.grams * (r.servings || 1) * 10) / 10, choices: [cur, ...others], pick: 0, touched: true,
+      };
+    }),
+  };
+}
+
+/** A new ingredient typed by hand ("200 g Skyr"), with matching foods to pick from. */
+export function newIngredient(text, products) {
+  const said = String(text || '').trim();
+  const m = said.match(/(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l)\b/i);
+  const grams = m ? parseFloat(m[1].replace(',', '.')) * (/^(kg|l)$/i.test(m[2]) ? 1000 : 1) : 100;
+  const name = nameOf(said) || said;
+  const ask = { de: name, en: name, name, said };
+  const choices = matchFood(ask, products).filter((p) => fitsMine(p, ask));
+  return { said, saidEn: '', postName: name, buy: '', brand: '', product: '', optional: false, grams, choices, pick: choices.length ? 0 : -1, touched: true };
 }
 
 /**
@@ -313,7 +362,7 @@ export function myRecipeTotals(r) {
 }
 
 /** Diary-ready items for `portions` portions. */
-export const myRecipeItems = (r, portions = 1) => r.items.map(({ said, saidEn, postName, buy, src, ...i }) => ({ ...i, per100: { ...i.per100 }, grams: i.grams * portions }));
+export const myRecipeItems = (r, portions = 1) => r.items.map(({ said, saidEn, postName, buy, src, options, ...i }) => ({ ...i, per100: { ...i.per100 }, grams: i.grams * portions }));
 
 // ---------- Translation ----------
 

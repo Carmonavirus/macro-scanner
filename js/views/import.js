@@ -14,7 +14,7 @@ import { storePicker, storeRow, bindStores } from './storepick.js';
 import { getStore, findBranded } from '../stores.js';
 import {
   readRecipe, toDraft, saveDraft, cleanLink, textWithoutLink, MAX_MEDIA_BYTES,
-  myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName, useProduct, removeIngredient, isTranslated, languageName, texts, statedGaps, addBranded, buyName,
+  myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName, useProduct, removeIngredient, draftFromRecipe, newIngredient, isTranslated, languageName, texts, statedGaps, addBranded, buyName,
 } from '../social.js';
 
 // Show the translation (English) or the post's own language; remembered while the app is open.
@@ -130,7 +130,7 @@ export async function renderImport(el) {
   });
 }
 
-function drawDraft(out, d) {
+function drawDraft(out, d, { onSaved, onCancel } = {}) {
   let store = null;   // the "Shop at" supermarket, loaded below
   const pickOf = (it) => (it.pick >= 0 ? it.choices[it.pick] : null);
   const amount = (it) => { const p = pickOf(it); if (!p) return null; const f = it.grams / 100; return { kcal: p.per100.kcal * f, protein: p.per100.protein * f, carbs: p.per100.carbs * f, fat: p.per100.fat * f }; };
@@ -141,7 +141,7 @@ function drawDraft(out, d) {
     const per = { kcal: t.kcal / d.servings, protein: t.protein / d.servings, carbs: t.carbs / d.servings, fat: t.fat / d.servings };
     const tx = texts(d, view.original);
     out.innerHTML = `
-      <h2 class="section-title">Check the recipe</h2>
+      <h2 class="section-title">${d.editId ? 'Edit the recipe' : 'Check the recipe'}</h2>
       ${langToggle(d)}
       <section class="card import-review">
         <label>Name <input id="d-title" value="${esc(tx.title)}"${view.original ? ' readonly' : ''}></label>
@@ -170,11 +170,16 @@ function drawDraft(out, d) {
           ${it.lookup ? `<div class="small muted">${esc(it.lookup)}</div>` : ''}
         </li>`;
       }).join('')}</ul>
+      <form class="add-ing" id="d-add">
+        <input id="d-add-text" placeholder="Add an ingredient, e.g. 200 g Skyr" autocomplete="off">
+        <button class="btn with-ic" type="submit">${icon('plus')} Add</button>
+      </form>
       <section class="card">
         <h3 class="card-title">Method</h3>
         <ol class="steps">${tx.steps.map((s) => `<li>${esc(s)}</li>`).join('') || '<li class="muted">No steps in the post.</li>'}</ol>
       </section>
-      <button class="btn primary big with-ic" id="d-save">${icon('bookmark-plus')} Save recipe</button>
+      <button class="btn primary big with-ic" id="d-save">${icon('bookmark-plus')} ${d.editId ? 'Save changes' : 'Save recipe'}</button>
+      ${onCancel ? '<button class="btn ghost big" id="d-cancel" type="button">Cancel</button>' : ''}
       <p class="muted small">✨ = Gemini’s estimate, because nothing in your foods or the basic foods matched. Amounts from a video are estimates, so check them.</p>`;
 
     $('#btn-lang', out)?.addEventListener('click', () => { view.original = !view.original; draw(); });
@@ -204,8 +209,17 @@ function drawDraft(out, d) {
       e.currentTarget.disabled = true;
       if (!view.original) d.title = $('#d-title', out).value.trim() || d.title;
       const r = await saveDraft(d);
-      toast('Recipe saved under My recipes');
-      location.hash = `#/myrecipe/${r.id}`;
+      toast(d.editId ? 'Recipe updated' : 'Recipe saved under My recipes');
+      if (onSaved) onSaved(r); else location.hash = `#/myrecipe/${r.id}`;
+    });
+    $('#d-cancel', out)?.addEventListener('click', () => onCancel());
+    $('#d-add', out).addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = $('#d-add-text', out).value.trim();
+      if (!text) return;
+      d.ingredients.push(newIngredient(text, await db.allProducts()));
+      draw();
+      $('#d-add-text', out)?.focus();
     });
   };
   draw();
@@ -290,13 +304,13 @@ export async function renderMyRecipe(el, id) {
         <div class="tile tile-carbs"><span class="val">${fmt(t.carbs)}</span><span class="unit">g</span><span class="lbl">Carbs</span></div>
         <div class="tile tile-fat"><span class="val">${fmt(t.fat)}</span><span class="unit">g</span><span class="lbl">Fat</span></div>
       </div>
-      <div class="actions">
+      <div class="actions even">
         <button class="btn primary with-ic" id="btn-log">${icon('plus')} Add to today</button>
         <button class="btn with-ic" id="btn-save">${icon('bookmark-plus')} Save as meal</button>
         <button class="btn with-ic" id="btn-shop">${icon('shopping-cart')} Shopping list</button>
       </div>
       <section class="card">
-        <h3 class="card-title">Ingredients</h3>
+        <div class="row-between"><h3 class="card-title">Ingredients</h3><button type="button" class="btn small with-ic" id="btn-edit">${icon('pencil')} Edit</button></div>
         ${storePicker(store)}
         <ul class="recipe-ingredients">${items.map((i, n) => `
           <li ${tintAttrs(i.per100)}>
@@ -319,6 +333,13 @@ export async function renderMyRecipe(el, id) {
       onStore: async () => { store = await getStore(); draw(); },
       // Swap the ingredient for the shop's product: its macros replace the old ones.
       onUse: async (n, p) => { await useProduct(r, n, p); per = myRecipeTotals(r); draw(); },
+    });
+    $('#btn-edit', el).addEventListener('click', async () => {
+      const d = draftFromRecipe(r, await db.allProducts());
+      el.innerHTML = '<div class="import-edit"></div>';
+      window.scrollTo(0, 0);
+      const back = () => renderMyRecipe(el, id);
+      drawDraft($('.import-edit', el), d, { onSaved: back, onCancel: back });
     });
     $$('[data-rm]', el).forEach((b) => b.addEventListener('click', async () => {
       const n = +b.dataset.rm;
