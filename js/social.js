@@ -84,6 +84,38 @@ const toBase64 = (file) => new Promise((resolve, reject) => {
   r.readAsDataURL(file);
 });
 
+// What Gemini gets told about where the post comes from.
+const PLATFORM_HINT = {
+  youtube: `This is a YouTube video, and you get the video itself. Watch and listen to all of it: take the ingredients, the amounts and the steps from what is said, from text shown on screen and from what you see being added. Use the description too if it is given. Amounts said in the video count as written ones ("said" is then what is said, in the video's language).`,
+  instagram: `This is an Instagram post or reel. The recipe is usually in the caption, or in screenshots of the caption or of the video: read every line of text in the pictures carefully, including small text.`,
+  tiktok: `This is a TikTok video. The recipe is often only in the video (spoken or as text on screen), sometimes in the caption.`,
+  other: '',
+};
+
+/** Which platform a link is from: 'youtube', 'instagram', 'tiktok' or ''. */
+export function platformOf(link) {
+  try {
+    const h = new URL(link).hostname.replace(/^(www|m)\./, '');
+    if (/(^|\.)youtube\.com$|^youtu\.be$/.test(h)) return 'youtube';
+    if (/(^|\.)instagram\.com$/.test(h)) return 'instagram';
+    if (/(^|\.)tiktok\.com$/.test(h)) return 'tiktok';
+  } catch { /* not a link */ }
+  return '';
+}
+
+/** A YouTube link as https://www.youtube.com/watch?v=ID (also from youtu.be and Shorts links), or ''. */
+export function youtubeUrl(link) {
+  try {
+    const u = new URL(link);
+    const h = u.hostname.replace(/^(www|m)\./, '');
+    let id = '';
+    if (h === 'youtu.be') id = u.pathname.slice(1);
+    else if (/youtube\.com$/.test(h)) id = u.searchParams.get('v') || (u.pathname.match(/^\/(shorts|live|embed)\/([^/?#]+)/) || [])[2] || '';
+    id = (id.match(/^[\w-]{11}/) || [''])[0];
+    return id ? `https://www.youtube.com/watch?v=${id}` : '';
+  } catch { return ''; }
+}
+
 /** Is this a link to a post? Returns the cleaned https URL or ''. */
 export function cleanLink(s) {
   const m = String(s || '').match(/https?:\/\/[^\s<>"']+/i);
@@ -102,12 +134,17 @@ export const textWithoutLink = (s) => String(s || '').replace(/https?:\/\/[^\s<>
  * Ask Gemini for the recipe. `files` are File objects (video or images).
  * Resolves the raw recipe JSON, or throws with a readable message.
  */
-export async function readRecipe({ link, caption, files = [], onRetry }) {
+export async function readRecipe({ link, caption, files = [], platform = '', onRetry }) {
   const key = geminiKey();
   if (!key) throw new Error('Connect Google Gemini first.');
   const size = files.reduce((n, f) => n + f.size, 0);
   if (size > MAX_MEDIA_BYTES) throw new Error('The video or pictures are too big (over 14 MB). Use a shorter clip or a few screenshots instead.');
-  const parts = [{ text: `${PROMPT}\n\nLink to the post: ${link || '(none)'}\nCaption:\n${caption || '(no caption given)'}` }];
+  const where = platform || platformOf(link) || 'other';
+  const video = where === 'youtube' ? youtubeUrl(link) : '';
+  const hint = PLATFORM_HINT[where] ? `\n\n${PLATFORM_HINT[where]}` : '';
+  const parts = [{ text: `${PROMPT}${hint}\n\nLink to the post: ${link || '(none)'}\n${where === 'youtube' ? 'Description' : 'Caption'}:\n${caption || '(none given)'}` }];
+  // Gemini watches public YouTube videos itself from the link.
+  if (video) parts.push({ fileData: { fileUri: video } });
   for (const f of files) parts.push({ inlineData: { mimeType: f.type || 'application/octet-stream', data: await toBase64(f) } });
 
   return generateJson(key, parts, SCHEMA, { temperature: 0.2, onRetry });

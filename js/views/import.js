@@ -13,13 +13,42 @@ import { addToShoppingList } from './shopping.js';
 import { storePicker, storeRow, bindStores } from './storepick.js';
 import { getStore, findBranded } from '../stores.js';
 import {
-  readRecipe, toDraft, saveDraft, cleanLink, textWithoutLink, MAX_MEDIA_BYTES,
+  readRecipe, toDraft, saveDraft, cleanLink, textWithoutLink, MAX_MEDIA_BYTES, platformOf, youtubeUrl,
   myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName, useProduct, removeIngredient, draftFromRecipe, newIngredient, isTranslated, languageName, texts, statedGaps, addBranded, buyName,
 } from '../social.js';
 
 // Show the translation (English) or the post's own language; remembered while the app is open.
 const view = { original: false };
 const langToggle = (r) => (isTranslated(r) ? `<button class="btn small with-ic lang-toggle" id="btn-lang" type="button">${icon('languages')} ${view.original ? 'Show English' : `Show original (${esc(languageName(r.lang))})`}</button>` : '');
+
+const PLATFORMS = [
+  {
+    id: 'instagram', name: 'Instagram', placeholder: 'https://www.instagram.com/reel/…', caption: 'Caption', captionHint: 'Paste the caption with the recipe here',
+    hint: 'Get the ingredients and steps from an Instagram reel or post.',
+    how: [
+      'In Instagram, tap <strong>Share</strong> on the post and pick <strong>Macro Scanner</strong>, or copy the link and paste it here.',
+      'Instagram doesn’t let apps read posts, so add a screenshot of the caption, or copy it: tap the caption, then <strong>⋯ › Copy</strong> or long-press it.',
+      'If the recipe is only in the video, add the video (save it or screen-record it) or a few screenshots.',
+    ],
+  },
+  {
+    id: 'youtube', name: 'YouTube', placeholder: 'https://www.youtube.com/watch?v=… or a Shorts link', caption: 'Description (optional)', captionHint: 'Paste the description if the recipe is written there',
+    hint: 'Gemini watches the YouTube video itself and writes down the ingredients and steps it hears and sees.',
+    how: [
+      'In YouTube, tap <strong>Share › Copy link</strong> (or share it to <strong>Macro Scanner</strong>) and paste it here.',
+      'The video must be public. Long videos take a while; Shorts are quickest.',
+      'If the recipe is written in the description, paste it too for exact amounts.',
+    ],
+  },
+  {
+    id: 'tiktok', name: 'TikTok', placeholder: 'https://www.tiktok.com/@…/video/…', caption: 'Caption', captionHint: 'Paste the caption with the recipe here',
+    hint: 'Get the ingredients and steps from a TikTok video.',
+    how: [
+      'Copy the link and the caption and paste them here.',
+      'TikTok doesn’t let apps read videos, so if the recipe is only in the video, save it and add it here, or add a few screenshots.',
+    ],
+  },
+];
 
 const SHARE_KEY = 'sharedPost';   // sessionStorage: { link, text } from Android's share menu
 const macroLine = (t) => `${fmt(t.kcal, 'kcal')} kcal · P ${fmt(t.protein)} · C ${fmt(t.carbs)} · F ${fmt(t.fat)}`;
@@ -46,18 +75,18 @@ export async function renderImport(el) {
   let shared = null;
   try { shared = JSON.parse(sessionStorage.getItem(SHARE_KEY)); sessionStorage.removeItem(SHARE_KEY); } catch { /* ignore */ }
 
+  let platform = platformOf(shared?.link || '') || 'instagram';
   el.innerHTML = `
     <section class="card import-card">
-      <p class="hint">Get the ingredients and steps from an Instagram reel or post (TikTok and YouTube work too).</p>
-      <ol class="steps small">
-        <li>In Instagram, tap <strong>Share</strong> on the post and pick <strong>Macro Scanner</strong>, or copy the link and paste it here.</li>
-        <li>Instagram doesn’t let apps read posts, so copy the caption too: tap the caption, then <strong>⋯ › Copy</strong> or long-press it.</li>
-        <li>For a reel where the recipe is only in the video, add the video (save it or screen-record it) or a few screenshots.</li>
-      </ol>
+      <div class="segmented" role="tablist" aria-label="Where the recipe is from">
+        ${PLATFORMS.map((p) => `<button type="button" role="tab" data-platform="${p.id}">${esc(p.name)}</button>`).join('')}
+      </div>
+      <p class="hint" id="imp-hint"></p>
+      <ol class="steps small" id="imp-how"></ol>
       <label>Link to the post
-        <input id="imp-link" type="url" inputmode="url" placeholder="https://www.instagram.com/reel/…" value="${esc(shared?.link || '')}">
+        <input id="imp-link" type="url" inputmode="url" value="${esc(shared?.link || '')}">
       </label>
-      <label>Caption
+      <label><span id="imp-caption-label">Caption</span>
         <textarea id="imp-caption" rows="6" placeholder="Paste the caption with the recipe here">${esc(shared?.text || '')}</textarea>
       </label>
       <button class="btn small with-ic" id="imp-paste" type="button">${icon('notebook-pen')} Paste</button>
@@ -67,7 +96,7 @@ export async function renderImport(el) {
       <p class="small muted" id="imp-files-info"></p>
       <button class="btn primary with-ic" id="imp-go">${icon('chef-hat')} Get the recipe</button>
       <p class="status" id="imp-status" role="status"></p>
-      <p class="muted small">The caption and any video or pictures you add go to Google Gemini to read the recipe. With a free key, Google may use them to improve its products.</p>
+      <p class="muted small">The link, caption and any video or pictures you add go to Google Gemini to read the recipe. With a free key, Google may use them to improve its products.</p>
     </section>
     <div id="imp-out"></div>`;
 
@@ -77,6 +106,20 @@ export async function renderImport(el) {
   const status = $('#imp-status', el);
   const out = $('#imp-out', el);
   const go = $('#imp-go', el);
+
+  // Instagram / YouTube / TikTok: each has its own help, and Gemini gets told where the recipe is from.
+  const showPlatform = () => {
+    const p = PLATFORMS.find((x) => x.id === platform);
+    $$('[data-platform]', el).forEach((b) => { b.classList.toggle('active', b.dataset.platform === platform); b.setAttribute('aria-selected', b.dataset.platform === platform); });
+    $('#imp-hint', el).textContent = p.hint;
+    $('#imp-how', el).innerHTML = p.how.map((x) => `<li>${x}</li>`).join('');
+    link.placeholder = p.placeholder;
+    $('#imp-caption-label', el).textContent = p.caption;
+    caption.placeholder = p.captionHint;
+  };
+  $$('[data-platform]', el).forEach((b) => b.addEventListener('click', () => { platform = b.dataset.platform; showPlatform(); }));
+  link.addEventListener('input', () => { const p = platformOf(cleanLink(link.value)); if (p && p !== platform) { platform = p; showPlatform(); } });
+  showPlatform();
 
   // A link pasted into the caption box moves to the link box.
   const tidy = () => {
@@ -107,16 +150,22 @@ export async function renderImport(el) {
     const l = cleanLink(link.value) || link.value.trim();
     const c = caption.value.trim();
     const fs = [...files.files];
-    if (!c && !fs.length) {
+    const yt = platform === 'youtube' ? youtubeUrl(l) : '';
+    if (platform === 'youtube' && !yt && !c && !fs.length) {
+      status.className = 'status error';
+      status.textContent = 'Paste the link to the YouTube video (or Short).';
+      return;
+    }
+    if (!yt && !c && !fs.length) {
       status.className = 'status error';
       status.textContent = 'Paste the caption or add the video or screenshots. The app can’t open Instagram posts by itself.';
       return;
     }
     go.disabled = true;
     status.className = 'status';
-    status.textContent = fs.some((f) => f.type.startsWith('video')) ? 'Watching the video and reading the recipe… this can take a minute.' : 'Reading the recipe…';
+    status.textContent = yt || fs.some((f) => f.type.startsWith('video')) ? 'Watching the video and reading the recipe… this can take a minute.' : 'Reading the recipe…';
     try {
-      const raw = await readRecipe({ link: l, caption: c, files: fs, onRetry: () => { status.textContent = 'Gemini didn’t answer properly, trying again…'; } });
+      const raw = await readRecipe({ link: l, caption: c, files: fs, platform, onRetry: () => { status.textContent = 'Gemini didn’t answer properly, trying again…'; } });
       if (!raw.ingredients?.length) throw new Error('No recipe found in that. Add the caption or the video with the recipe.');
       const draft = toDraft(raw, await db.allProducts(), { link: l, caption: c });
       status.textContent = '';
