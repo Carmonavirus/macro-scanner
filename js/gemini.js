@@ -41,7 +41,7 @@ const isBadKey = (status, msg) => (status === 400 || status === 401 || status ==
  * Generate JSON with a response schema. `parts` are Gemini content parts (text, inlineData).
  * Resolves the parsed JSON, or throws a GeminiError with a readable message.
  */
-export async function generateJson(key, parts, schema, { temperature = 0.1, onRetry } = {}) {
+export async function generateJson(key, parts, schema, { temperature = 0.1, onRetry, thinking } = {}) {
   let busy = false;
   let unreadable = '';
   for (const model of MODELS) {
@@ -54,7 +54,11 @@ export async function generateJson(key, parts, schema, { temperature = 0.1, onRe
           body: JSON.stringify({
             contents: [{ role: 'user', parts }],
             // A second try gets a little more variety, which gets it out of a loop that never ends.
-            generationConfig: { responseMimeType: 'application/json', responseSchema: schema, maxOutputTokens: 16384, temperature: attempt ? Math.max(temperature, 0.5) : temperature },
+            generationConfig: {
+              responseMimeType: 'application/json', responseSchema: schema, maxOutputTokens: 16384, temperature: attempt ? Math.max(temperature, 0.5) : temperature,
+              // Only the 2.5 models are known to take a thinking budget.
+              ...(thinking != null && /^gemini-2\.5-flash$/.test(model) ? { thinkingConfig: { thinkingBudget: thinking } } : {}),
+            },
           }),
         });
       } catch {

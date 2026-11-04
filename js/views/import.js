@@ -140,8 +140,9 @@ export async function renderImport(el) {
   files.addEventListener('change', () => {
     const fs = [...files.files];
     const size = fs.reduce((n, f) => n + f.size, 0);
+    const videos = fs.filter((f) => !f.type.startsWith('image')).reduce((n, f) => n + f.size, 0);   // pictures get made smaller
     $('#imp-files-info', el).textContent = fs.length
-      ? `${fs.length} file${fs.length === 1 ? '' : 's'}, ${mb(size)}${size > MAX_MEDIA_BYTES ? ': too big, use a shorter clip or screenshots' : ''}`
+      ? `${fs.length} file${fs.length === 1 ? '' : 's'}, ${mb(size)}${videos > MAX_MEDIA_BYTES ? ': too big, use a shorter clip or screenshots' : ''}`
       : '';
   });
 
@@ -162,12 +163,29 @@ export async function renderImport(el) {
       return;
     }
     go.disabled = true;
-    status.className = 'status';
-    status.textContent = yt || fs.some((f) => f.type.startsWith('video')) ? 'Watching the video and reading the recipe… this can take a minute.' : 'Reading the recipe…';
+    // Which step is running, with the seconds so far, so a slow step shows where the time goes.
+    const watching = yt || fs.some((f) => f.type.startsWith('video'));
+    const STEPS = {
+      prepare: 'Making the pictures smaller',
+      gemini: watching ? 'Gemini is watching the video and reading the recipe (can take a minute)' : 'Gemini is reading the recipe',
+      retry: 'Gemini didn’t answer properly, trying again',
+      match: 'Matching the ingredients to foods',
+    };
+    let step = 'gemini';
+    const t0 = Date.now();
+    const show = () => { const s = Math.round((Date.now() - t0) / 1000); status.textContent = `${STEPS[step]}…${s >= 2 ? ` ${s} s` : ''}`; };
+    const setStep = (x) => { step = x; show(); };
+    status.className = 'status busy';
+    show();
+    const timer = setInterval(show, 1000);
     try {
-      const raw = await readRecipe({ link: l, caption: c, files: fs, platform, onRetry: () => { status.textContent = 'Gemini didn’t answer properly, trying again…'; } });
+      const raw = await readRecipe({ link: l, caption: c, files: fs, platform, onStep: setStep, onRetry: () => setStep('retry') });
       if (!raw.ingredients?.length) throw new Error('No recipe found in that. Add the caption or the video with the recipe.');
+      setStep('match');
+      await new Promise((r) => setTimeout(r, 0));   // let the step show
       const draft = toDraft(raw, await db.allProducts(), { link: l, caption: c });
+      clearInterval(timer);
+      status.className = 'status';
       status.textContent = '';
       drawDraft(out, draft);
       out.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -175,6 +193,7 @@ export async function renderImport(el) {
       status.className = 'status error';
       status.textContent = err.message;
     }
+    clearInterval(timer);
     go.disabled = false;
   });
 }
