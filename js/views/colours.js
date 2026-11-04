@@ -1,10 +1,10 @@
 // Colours: pick the app's highlight and secondary colours, the macro colours,
 // and the colour a value turns when its goal is reached. Changes preview live.
 
-import { $, $$, esc, toast, macroTiles, kcalHeader } from '../ui.js';
+import { $, $$, esc, toast, macroTiles, kcalHeader, dayMiniHtml } from '../ui.js';
 import { tintAttrs } from '../nutrition.js';
 import { icon } from '../icons.js';
-import { DEFAULTS, getTheme, saveTheme, applyTheme, DEFAULT_TINT } from '../theme.js';
+import { DEFAULTS, getTheme, saveTheme, applyTheme, DEFAULT_TINT, DEFAULT_DAYBAR_STYLE } from '../theme.js';
 
 const GROUPS = [
   { title: 'App', rows: [
@@ -13,6 +13,10 @@ const GROUPS = [
     { key: 'secondary', label: 'Secondary', hint: 'Small text and kcal',
       presets: ['#5b5b5b', '#6b7280', '#57534e', '#475569', '#3f6212', '#1e3a8a'] },
   ] },
+  { title: 'Day total', rows: [
+    { key: 'daybar', label: 'Background', hint: 'The diary’s day total and its slim bar. White = like the other cards',
+      presets: ['#ffffff', '#ab2200', '#2563eb', '#0f766e', '#16a34a', '#ca8a04', '#7c3aed', '#475569'] },
+  ], extra: 'daybar' },
   { title: 'Goal reached', rows: [
     { key: 'goal', label: 'Highlight when reached', hint: 'Background of a macro once you hit its goal',
       presets: ['#22c55e', '#10b981', '#14b8a6', '#0ea5e9', '#eab308', '#f97316', '#ec4899'] },
@@ -26,7 +30,9 @@ const GROUPS = [
 
 export async function renderColours(el) {
   const saved = await getTheme();
-  let theme = { ...DEFAULTS, tint: DEFAULT_TINT, ...saved };
+  let theme = { ...DEFAULTS, tint: DEFAULT_TINT, daybarStyle: DEFAULT_DAYBAR_STYLE, ...saved };
+  const sample = { kcal: 1640, protein: 152, carbs: 160, fat: 58 };
+  const sampleGoals = { kcal: 2200, protein: 150, carbs: 250, fat: 70 };
   let done = false;
 
   const preview = () => `
@@ -53,6 +59,10 @@ export async function renderColours(el) {
               ${r.presets.map((c) => `<button type="button" class="swatch" style="--sw:${c}" data-preset="${c}" aria-label="Use ${c}"></button>`).join('')}
             </div>
           </div>`).join('')}
+        ${g.extra === 'daybar' ? `
+          <div class="chips daybar-chips" role="radiogroup" aria-label="How strong">${[['soft', 'Soft'], ['strong', 'Strong'], ['solid', 'Solid']].map(([v, l]) => `<button type="button" class="chip" role="radio" data-daybar-style="${v}">${l}</button>`).join('')}</div>
+          <section class="card summary daybar daybar-preview" aria-label="Preview">${kcalHeader(sample.kcal, sampleGoals.kcal)}</section>
+          <div class="daymini inline" aria-hidden="true">${dayMiniHtml(sample, sampleGoals)}</div>` : ''}
       </section>`).join('')}
     <section class="card">
       <h2 class="card-title">Macro line</h2>
@@ -76,6 +86,7 @@ export async function renderColours(el) {
       $$('.swatch', row).forEach((s) => s.classList.toggle('on', s.dataset.preset.toLowerCase() === theme[k].toLowerCase()));
     });
     $$('[data-tint]', el).forEach((b) => { const on = b.dataset.tint === theme.tint; b.classList.toggle('active', on); b.setAttribute('aria-checked', on); });
+    $$('[data-daybar-style]', el).forEach((b) => { const on = b.dataset.daybarStyle === theme.daybarStyle; b.classList.toggle('active', on); b.setAttribute('aria-checked', on); });
     applyTheme(theme);
   };
   const set = (k, v) => { theme = { ...theme, [k]: v.toLowerCase() }; sync(); };
@@ -86,7 +97,12 @@ export async function renderColours(el) {
     $('[data-reset]', row).addEventListener('click', () => set(row.dataset.key, DEFAULTS[row.dataset.key]));
   });
   $$('[data-tint]', el).forEach((b) => b.addEventListener('click', () => { theme = { ...theme, tint: b.dataset.tint }; sync(); }));
-  $('#btn-colours-reset', el).addEventListener('click', () => { theme = { ...DEFAULTS, tint: DEFAULT_TINT }; sync(); });
+  $$('[data-daybar-style]', el).forEach((b) => b.addEventListener('click', () => {
+    // A strength without a colour shows nothing: pick the highlight colour then.
+    theme = { ...theme, daybarStyle: b.dataset.daybarStyle, ...(theme.daybar === DEFAULTS.daybar ? { daybar: theme.accent } : {}) };
+    sync();
+  }));
+  $('#btn-colours-reset', el).addEventListener('click', () => { theme = { ...DEFAULTS, tint: DEFAULT_TINT, daybarStyle: DEFAULT_DAYBAR_STYLE }; sync(); });
   $('#btn-colours-save', el).addEventListener('click', async () => {
     await saveTheme(theme);
     done = true;

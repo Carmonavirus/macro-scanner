@@ -11,7 +11,12 @@ export const DEFAULTS = {
   protein: '#1d4ed8',
   carbs: '#a16207',
   fat: '#7e22ce',
+  daybar: '#ffffff',   // the diary's day total; white = same as the other cards
 };
+
+// How strongly the day total takes its colour: share of the colour mixed into the card [light, dark].
+export const DAYBAR_STYLES = { soft: [14, 22], strong: [32, 42], solid: [100, 100] };
+export const DEFAULT_DAYBAR_STYLE = 'soft';
 
 const CSS_KEY = 'themeCss';
 
@@ -38,6 +43,13 @@ export function themeCss(theme = {}) {
   const tint = theme.tint in TINTS && theme.tint !== DEFAULT_TINT ? TINTS[theme.tint] : null;
   if (!Object.keys(t).length && !tint) return '';
   const light = [], dark = [];
+  if (t.daybar) {
+    const [a, b] = DAYBAR_STYLES[theme.daybarStyle] || DAYBAR_STYLES[DEFAULT_DAYBAR_STYLE];
+    const solid = theme.daybarStyle === 'solid';
+    light.push(`--daybar-bg:color-mix(in srgb, ${t.daybar} ${a}%, #ffffff)`, `--daybar-line:color-mix(in srgb, ${t.daybar} ${Math.min(100, a + 25)}%, #ffffff)`);
+    dark.push(`--daybar-bg:color-mix(in srgb, ${t.daybar} ${b}%, #1c1c1c)`, `--daybar-line:color-mix(in srgb, ${t.daybar} ${Math.min(100, b + 20)}%, #1c1c1c)`);
+    if (solid) { light.push(`--daybar-ink:${inkOn(t.daybar)}`); dark.push(`--daybar-ink:${inkOn(t.daybar)}`); }
+  }
   if (tint) { light.push(`--tint:${tint[0]}px`); dark.push(`--tint:${tint[1]}px`); }
   // In dark mode colours are lifted a little towards white so they stay readable on the dark background.
   const lift = (v, pct) => `color-mix(in srgb, ${v} ${pct}%, #ffffff)`;

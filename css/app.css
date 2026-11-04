@@ -677,3 +677,9 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 .dm-meter { display: block; height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 2px; }
 .dm-meter i { display: block; height: 100%; background: var(--kcal); }
 .daymini.inline { position: sticky; left: auto; transform: none; width: auto; margin: 0 0 12px; cursor: default; }
+/* Day total colour (Colours › Day total) */
+.daybar, .daymini { background: var(--daybar-bg, var(--card)); border-color: var(--daybar-line, var(--line)); color: var(--daybar-ink, var(--text)); }
+.daybar .muted, .daymini .muted, .daymini .dm-left, .daymini .dm-macros { color: var(--daybar-ink, var(--muted)); }
+.daybar-chips { margin: 4px 0 10px; }
+.daybar-preview { margin: 0 0 8px; }
+.daybar-preview + .daymini.inline { position: static; margin: 0; }
