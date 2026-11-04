@@ -184,6 +184,19 @@ export async function findBranded(brand, product, { onWait } = {}) {
   return list;
 }
 
+// Any shop in Germany: for finding a real product for a recipe ingredient.
+const ANY_SHOP = { id: 'de', off: '', house: [] };
+
+/**
+ * Real products on Open Food Facts (sold in Germany) for a recipe ingredient that only had
+ * Gemini's estimate. Only products with the food's name in theirs, and not wildly different
+ * from the estimate (that's a different food). Best first, at most 3.
+ */
+export async function findForIngredient(want, { onWait } = {}) {
+  const list = await findAtStore(ANY_SHOP, want, { onWait });
+  return list.filter((p) => p.named && (p.match == null || p.match >= 25)).slice(0, 3).map(({ match, house, named, ...p }) => p);
+}
+
 /**
  * Products for an ingredient that Open Food Facts lists as sold at the shop, the ones whose
  * macros are closest to the recipe's first. `want` is { name, per100 } of the recipe ingredient.
@@ -220,7 +233,7 @@ export async function findAtStore(store, want, { onWait } = {}) {
       const prepared = PREPARED_NAME.test(pname) || PREPARED_CATS.test(cats);
       const dist = macroDistance(n.per100, target);
       list.push({
-        code: p.code, name: n.name, brand: n.brand, quantity: n.quantity, imageUrl: n.imageUrl, per100: n.per100, unit: n.unit,
+        code: p.code, name: n.name, brand: n.brand, quantity: n.quantity, imageUrl: n.imageUrl, per100: n.per100, unit: n.unit, source: 'off',
         house: store.house.some((h) => brand.includes(h)),
         named: words.every((w) => flat.includes(w)),
         dist, prepared,
@@ -237,7 +250,7 @@ export async function findAtStore(store, want, { onWait } = {}) {
   // Raw chicken wanted and raw chicken found: leave out the cold cuts and ready meals.
   if (basic && list.some((p) => !p.prepared)) list = list.filter((p) => !p.prepared);
   list = list.sort((a, b) => a.score - b.score).slice(0, 5)
-    .map(({ score, dist, prepared: _p, named: _n, ...p }) => ({ ...p, match: target ? Math.max(0, Math.min(100, Math.round(100 - dist * 25))) : null }));
+    .map(({ score, dist, prepared: _p, ...p }) => ({ ...p, match: target ? Math.max(0, Math.min(100, Math.round(100 - dist * 25))) : null }));
   try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), list })); } catch { /* ignore */ }
   return list;
 }

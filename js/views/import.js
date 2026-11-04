@@ -11,7 +11,7 @@ import { geminiKey } from '../voice.js';
 import { renderAiCard } from './voice.js';
 import { addToShoppingList } from './shopping.js';
 import { storePicker, storeRow, bindStores } from './storepick.js';
-import { getStore, findBranded } from '../stores.js';
+import { getStore, findBranded, findForIngredient } from '../stores.js';
 import {
   readRecipe, toDraft, saveDraft, cleanLink, textWithoutLink, MAX_MEDIA_BYTES, platformOf, youtubeUrl,
   myRecipeById, myRecipeTotals, myRecipeItems, deleteMyRecipe, sourceName, useProduct, removeIngredient, draftFromRecipe, newIngredient, isTranslated, languageName, texts, statedGaps, addBranded, buyName,
@@ -292,7 +292,39 @@ function drawDraft(out, d, { onSaved, onCancel } = {}) {
   };
   draw();
   getStore().then((s) => { store = s; if (document.body.contains(out.querySelector('#d-save'))) draw(); });
-  lookUpBrands(d, draw);
+  lookUpBrands(d, draw).then(() => lookUpFoods(d, draw));
+}
+
+/**
+ * Ingredients that only have Gemini's estimate: look for the real food on Open Food Facts
+ * and pick it, so the macros come from the package, not from Gemini.
+ */
+async function lookUpFoods(d, draw) {
+  const here = () => document.body.contains(document.getElementById('d-save'));
+  const todo = d.ingredients.filter((it) => !it.brand && !it.touched && !it.offTried && it.choices[0]?.estimate);
+  for (const it of todo) {
+    if (!here()) return;
+    it.offTried = true;
+    const est = it.choices.find((c) => c.estimate);
+    const what = it.buy || it.postName || est.name;
+    it.lookup = `Looking for ${what} on Open Food Facts…`;
+    draw();
+    try {
+      const found = (await findForIngredient({ name: what, per100: est.per100 }, { onWait: (sec) => { it.lookup = `Looking for ${what} in ${sec} s (Open Food Facts allows only a few searches a minute)…`; if (here()) draw(); } }))
+        .filter((p) => !it.choices.some((c) => c.code === p.code));
+      if (found.length && !it.touched) {
+        it.choices.unshift(...found);
+        if (it.pick >= 0) it.pick = 0;
+        it.lookup = '';
+      } else {
+        it.lookup = found.length ? '' : 'Not on Open Food Facts, so this is Gemini’s estimate.';
+      }
+    } catch (err) {
+      it.lookup = `Couldn’t look up ${what}: ${err.message}`;
+    }
+    if (!here()) return;
+    draw();
+  }
 }
 
 /** Brand products named in the post: find the real product on Open Food Facts, one at a time. */

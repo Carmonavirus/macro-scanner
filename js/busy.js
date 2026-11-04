@@ -1,5 +1,5 @@
 // A spinner next to any "…" message (Loading…, Looking up…, Syncing…), so it's clear the app is working.
-const SEL = '.status, button, p.small.muted';
+const SEL = '.status, button, p.small.muted, div.small.muted';
 const check = (el) => { if (el.nodeType === 1 && el.matches(SEL)) el.classList.toggle('auto-busy', /…\s*$/.test(el.textContent) && !el.classList.contains('error')); };
 const scan = (root) => { if (root.nodeType !== 1) return; check(root); root.querySelectorAll(SEL).forEach(check); };
 new MutationObserver((list) => {
