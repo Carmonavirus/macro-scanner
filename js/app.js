@@ -124,5 +124,16 @@ window.addEventListener('stepsupdated', () => { const n = parseHash().parts[0] |
 window.addEventListener('hevyupdated', () => { const n = parseHash().parts[0] || ''; if (n === '' || n === 'day') route(); });
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    // Look for a new version whenever the app comes back to the front.
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
+  }).catch(() => {});
+  // A new version took over: reload once so it shows straight away (not while a recipe is being checked).
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloaded || document.getElementById('d-save')) return;
+    reloaded = true;
+    location.reload();
+  });
 }
