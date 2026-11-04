@@ -699,3 +699,6 @@ html, body { overflow-x: clip; } /* the day slides sideways without making the p
 /* Time a dish was logged, above its ingredients */
 .entry-time { display: flex; align-items: center; gap: 5px; padding: 6px 2px 2px; font-size: .78rem; color: var(--muted); }
 .entry-time svg { width: 13px; height: 13px; }
+/* What fits: the recipe name links to the recipe without looking like a card */
+.history .eat-row a.fit-name { display: inline; padding: 0; margin: 0; background: none; border: 0; box-shadow: none; min-height: 0; color: inherit; text-decoration: none; }
+.history .eat-row a.fit-name::after { content: none; }

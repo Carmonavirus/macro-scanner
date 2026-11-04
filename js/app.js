@@ -31,6 +31,7 @@ import { renderImport, renderMyRecipe, takeShare } from './views/import.js';
 import { syncThemeFromDb } from './theme.js';
 import { icon } from './icons.js';
 import { renderChanges } from './views/changes.js';
+import { renderFits } from './views/fits.js';
 import { startAutoSync, requestPersistence } from './sync.js';
 import { autoSync as hevyAutoSync } from './hevy.js';
 
@@ -71,6 +72,7 @@ const ROUTES = {
   shopping: { tab: 'shopping', title: 'Shopping list', root: true, render: () => renderShopping(view) },
   colours: { tab: 'more', title: 'Colours', render: () => renderColours(view) },
   supplements: { tab: 'diary', title: 'My supplements', render: () => renderSupplements(view) },
+  fits: { tab: 'recipes', title: 'What fits today', render: ([d, m]) => renderFits(view, d, m) },
   changes: { tab: 'more', title: 'What’s new', render: () => renderChanges(view) },
 };
 

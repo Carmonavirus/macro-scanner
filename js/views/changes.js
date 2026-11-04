@@ -2,6 +2,7 @@
 import { esc } from '../ui.js';
 
 export const CHANGES = [
+  { v: 'v62', date: '2026-11-04', items: ['“What fits what’s left today?” (Recipes tab and Add food): your recipes and saved meals ranked by how well they match the calories and macros you have left, with the portion size that fits best.'] },
   { v: 'v61', date: '2026-11-04', items: ['Cooked for more than one day? In a meal’s ⋯ menu, pick “Cooked for more than one portion”: today keeps 1 portion and the rest is saved as a meal to add on another day.'] },
   { v: 'v60', date: '2026-11-04', items: ['The diary shows the time you logged each food. A recipe or saved meal shows its time once, above its ingredients.'] },
   { v: 'v59', date: '2026-11-04', items: ['Tap the version in the top-right corner to see what changed in each version.'] },
