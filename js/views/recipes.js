@@ -36,7 +36,7 @@ export async function renderRecipes(el) {
     <a class="card eat-cta" href="#/eatout"><span class="thumb" aria-hidden="true">${icon('hamburger')}</span>
       <span class="info"><strong>No time to cook? Eat out</strong><span class="small muted">Dishes from McDonald’s, Burger King, KFC, Subway and dean&amp;david that fit what’s left today</span></span>${icon('chevron-right')}</a>
     <a class="card eat-cta" href="#/import"><span class="thumb" aria-hidden="true">${icon('chef-hat')}</span>
-      <span class="info"><strong>Recipe from Instagram</strong><span class="small muted">Paste or share a reel or post and get the ingredients, macros and steps</span></span>${icon('chevron-right')}</a>
+      <span class="info"><strong>Recipe from social media</strong><span class="small muted">Instagram, YouTube or TikTok: get the ingredients, macros and steps</span></span>${icon('chevron-right')}</a>
     ${mine.length ? `<h2 class="section-title with-ic recipe-sec">${icon('bookmark')} My recipes</h2>
     <ul class="history recipe-list">${mine.map((r) => { const t = myRecipeTotals(r); return `
       <li><a href="#/myrecipe/${esc(r.id)}">
