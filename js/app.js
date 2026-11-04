@@ -30,6 +30,7 @@ import { renderVoice } from './views/voice.js';
 import { renderImport, renderMyRecipe, takeShare } from './views/import.js';
 import { syncThemeFromDb } from './theme.js';
 import { icon } from './icons.js';
+import { renderChanges } from './views/changes.js';
 import { startAutoSync, requestPersistence } from './sync.js';
 import { autoSync as hevyAutoSync } from './hevy.js';
 
@@ -70,6 +71,7 @@ const ROUTES = {
   shopping: { tab: 'shopping', title: 'Shopping list', root: true, render: () => renderShopping(view) },
   colours: { tab: 'more', title: 'Colours', render: () => renderColours(view) },
   supplements: { tab: 'diary', title: 'My supplements', render: () => renderSupplements(view) },
+  changes: { tab: 'more', title: 'What’s new', render: () => renderChanges(view) },
 };
 
 let renderSeq = 0;
@@ -131,7 +133,7 @@ window.addEventListener('hevyupdated', () => { const n = parseHash().parts[0] ||
     const when = new Date(self.APP_RELEASED);
     const at = isNaN(when) ? '' : when.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     v.textContent = at ? `${self.APP_VERSION} (${at})` : self.APP_VERSION;
-    v.title = 'App version and when it was last updated';
+    v.title = 'App version and when it was last updated. Tap to see what’s new.';
   }
 }
 
