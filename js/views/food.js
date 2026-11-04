@@ -8,7 +8,7 @@ import { today, isValidKey, dayLabel } from '../dates.js';
 import {
   MACROS, hasMacros, scale, fmt, isValidGtin, isGermanCode, productFromForm, entryMacros, totals, tintAttrs,
 } from '../nutrition.js';
-import { $, $$, esc, go, backTo, nav, macroTiles, parseNum, toast, amountSlider, bindAmountSlider } from '../ui.js';
+import { $, $$, esc, go, backTo, nav, macroTiles, parseNum, toast, amountSlider, bindAmountSlider, dayMiniHtml } from '../ui.js';
 import { icon } from '../icons.js';
 import { searchGeneric, isGeneric, genericProduct, emojiFor } from '../generic.js';
 
@@ -37,8 +37,10 @@ function whenLabel(date) {
 
 export async function renderAdd(el, date, mealId) {
   const t = await target({ d: date, m: mealId });
+  const [dayEntries, goals] = await Promise.all([db.entriesForDate(t.date), db.getGoals()]);
   el.innerHTML = `
     <p class="context">Adding to <strong>${esc(t.meal.name)}</strong>, ${esc(whenLabel(t.date))}</p>
+    <div class="daymini inline" aria-label="Eaten so far">${dayMiniHtml(totals(dayEntries), goals)}</div>
     <div class="camera" id="camera">
       <video id="video" playsinline muted></video>
       <div class="reticle" aria-hidden="true"></div>
