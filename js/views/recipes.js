@@ -2,7 +2,7 @@
 // browsing TheMealDB (free open recipe database, no macros) and links to creator sites.
 
 import * as db from '../db.js';
-import { fmt, tintAttrs } from '../nutrition.js';
+import { fmt, tintAttrs, totals } from '../nutrition.js';
 import { $, $$, esc, toast, actionSheet } from '../ui.js';
 import { icon } from '../icons.js';
 import { today } from '../dates.js';
@@ -31,7 +31,7 @@ const macroLine = (t) => `${fmt(t.kcal, 'kcal')} kcal · P ${fmt(t.protein)} · 
 
 // ---------- List ----------
 export async function renderRecipes(el) {
-  const mine = await getMyRecipes();
+  const [mine, saved] = await Promise.all([getMyRecipes(), db.getSavedMeals()]);
   el.innerHTML = `
     <a class="card eat-cta" href="#/fits"><span class="thumb" aria-hidden="true">${icon('target')}</span>
       <span class="info"><strong>What fits what’s left today?</strong><span class="small muted">Your recipes and saved meals that best match the calories and macros you have left</span></span>${icon('chevron-right')}</a>
@@ -46,8 +46,16 @@ export async function renderRecipes(el) {
         <span class="info"><strong>${esc(r.name)}</strong>
           <span class="small muted">${fmt(t.kcal, 'kcal')} kcal per portion${r.link ? ` · ${esc(sourceName(r.link))}` : ''}</span></span>
         <span class="recipe-protein"><b>${fmt(t.protein)} g</b><small>protein</small></span>
-      </a></li>`; }).join('')}</ul>
-    <h2 class="section-title recipe-sec">Recipes</h2>` : ''}
+      </a></li>`; }).join('')}</ul>` : ''}
+    ${saved.length ? `<h2 class="section-title with-ic recipe-sec">${icon('utensils')} Saved meals</h2>
+    <ul class="history recipe-list">${saved.map((s) => { const t = totals(s.items); return `
+      <li><a href="#" data-saved-log="${esc(s.id)}" aria-label="Add ${esc(s.name)} to today">
+        <span class="thumb">${icon('utensils')}</span>
+        <span class="info"><strong>${esc(s.name)}</strong>
+          <span class="small muted">${s.portions ? '1 portion · ' : ''}${macroLine(t)}</span></span>
+        <span class="recipe-protein"><b>${fmt(t.protein)} g</b><small>protein</small></span>
+      </a></li>`; }).join('')}</ul>` : ''}
+    ${mine.length || saved.length ? '<h2 class="section-title recipe-sec">Recipes</h2>' : ''}
     <p class="hint">High-protein recipes with macros worked out per portion. Log them, save them as a meal or put the ingredients on your shopping list.</p>
     <div class="chips recipe-filters">${FILTERS.map((f) => `<button class="chip${state.filter === f.id ? ' active' : ''}" data-filter="${esc(f.id)}">${esc(f.label)}</button>`).join('')}</div>
     <ul class="history recipe-list" id="recipe-list"></ul>
@@ -68,6 +76,18 @@ export async function renderRecipes(el) {
         <span class="info"><strong>${esc(s.name)}</strong><span class="small muted">${esc(s.who)} · ${esc(s.note)}</span></span>
       </a></li>`).join('')}
     </ul>`;
+
+  // A saved meal: tap to add it to a meal today.
+  $$('[data-saved-log]', el).forEach((a) => a.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const s = saved.find((x) => x.id === a.dataset.savedLog);
+    const date = today();
+    const meals = await db.mealsForDate(date);
+    const pick = await actionSheet(`Add ${s.name} to which meal today?`, meals.map((m) => ({ value: m.id, label: m.name, icon: 'utensils' })), icon);
+    if (!pick) return;
+    await db.logSavedMeal(s, date, pick);
+    toast(`Added ${s.name} to ${meals.find((m) => m.id === pick).name}`, { action: 'Open diary', onAction: () => { location.hash = '#/'; } });
+  }));
 
   const list = $('#recipe-list', el);
   const draw = () => {
