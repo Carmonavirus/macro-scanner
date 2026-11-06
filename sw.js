@@ -4,7 +4,7 @@ importScripts('js/version.js');
 const VERSION = self.APP_VERSION;
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
-  'js/app.js', 'js/version.js', 'js/busy.js', 'js/views/changes.js', 'js/views/fits.js', 'js/scanner.js', 'js/off.js', 'js/db.js', 'js/nutrition.js', 'js/ui.js', 'js/dates.js', 'js/sync.js', 'js/icons.js',
+  'js/app.js', 'js/version.js', 'js/busy.js', 'js/views/changes.js', 'js/views/fits.js', 'js/views/guess.js', 'js/scanner.js', 'js/off.js', 'js/db.js', 'js/nutrition.js', 'js/ui.js', 'js/dates.js', 'js/sync.js', 'js/icons.js',
   'js/views/diary.js', 'js/views/food.js', 'js/views/reports.js', 'js/views/more.js', 'js/views/goals.js', 'js/views/supplements.js', 'js/views/colours.js', 'js/theme.js', 'js/swipe.js', 'js/hevy.js', 'js/generic.js', 'js/views/hevy.js', 'js/views/shopping.js', 'js/recipes.js', 'js/views/recipes.js', 'js/steps.js', 'js/chains.js', 'js/views/eatout.js', 'js/voice.js', 'js/views/voice.js', 'js/nearby.js', 'js/social.js', 'js/gemini.js', 'js/stores.js', 'js/views/storepick.js', 'js/views/import.js',
   'vendor/barcode-detector-ponyfill.js', 'vendor/zxing_reader.wasm',
   'icons/icon-192.png', 'icons/icon-512.png',

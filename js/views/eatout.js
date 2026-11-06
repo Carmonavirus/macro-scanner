@@ -43,6 +43,8 @@ export async function renderEatOut(el) {
         ${scale < 1 ? `<p class="hint small">That’s more than one meal, so dishes aim for about ${MEAL_MAX} kcal.</p>` : ''}`
         : '<p class="hint">Set a calorie goal to see what fits. Until then, dishes up to 800 kcal are shown. <a href="#/goals">Set goals</a></p>'}
     </section>
+    <a class="card eat-cta" href="#/guess/${date}"><span class="thumb" aria-hidden="true">${icon('sparkles')}</span>
+      <span class="info"><strong>Not a chain? Estimate any dish</strong><span class="small muted">Type e.g. “Döner Kebab” and get the calories and macros of a typical portion</span></span>${icon('chevron-right')}</a>
     <section class="card eat-near">
       <button class="btn with-ic" id="btn-near">${icon('map-pin')} ${state.near ? 'Search again' : 'Find the nearest restaurants'}</button>
       <p class="status" id="near-status" role="status"></p>
