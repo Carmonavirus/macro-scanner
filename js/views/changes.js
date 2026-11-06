@@ -2,6 +2,7 @@
 import { esc } from '../ui.js';
 
 export const CHANGES = [
+  { v: 'v65', date: '2026-11-06', items: ['Restaurant dish: add a photo or screenshot of the menu and just type the dish’s number.'] },
   { v: 'v64', date: '2026-11-06', items: ['Restaurant dish: type any dish (“Döner Kebab”, “rice with chicken and sauce”) and Gemini estimates a typical portion’s calories and macros. In Add food and Eat out.'] },
   { v: 'v63', date: '2026-11-05', items: ['Recipes tab: your saved meals are listed too, with calories and macros. Tap one to add it to today.'] },
   { v: 'v62', date: '2026-11-04', items: ['“What fits what’s left today?” (Recipes tab and Add food): your recipes and saved meals ranked by how well they match the calories and macros you have left, with the portion size that fits best.'] },

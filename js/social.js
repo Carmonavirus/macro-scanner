@@ -77,7 +77,7 @@ const SCHEMA = {
   required: ['language', 'title', 'titleOriginal', 'servings', 'minutes', 'ingredients', 'steps', 'stepsOriginal', 'stated', 'statedFor', 'notes'],
 };
 
-const toBase64 = (file) => new Promise((resolve, reject) => {
+export const toBase64 = (file) => new Promise((resolve, reject) => {
   const r = new FileReader();
   r.onload = () => resolve(String(r.result).split(',')[1]);
   r.onerror = () => reject(new Error(`Couldn’t read ${file.name}`));
@@ -89,7 +89,7 @@ const toBase64 = (file) => new Promise((resolve, reject) => {
  * at a smaller size, and a smaller picture uploads and gets read faster.
  */
 const MAX_SIDE = 1800;
-async function shrinkImage(file) {
+export async function shrinkImage(file) {
   if (!/^image\/(png|jpe?g|webp|heic|heif)$/i.test(file.type) || typeof createImageBitmap !== 'function') return file;
   try {
     const bmp = await createImageBitmap(file);

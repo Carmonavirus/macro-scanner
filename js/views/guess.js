@@ -8,6 +8,7 @@ import { icon } from '../icons.js';
 import { today, isValidKey } from '../dates.js';
 import { geminiKey } from '../voice.js';
 import { generateJson } from '../gemini.js';
+import { shrinkImage, toBase64 } from '../social.js';
 
 const PROMPT = `Estimate the nutrition of a dish ordered at a restaurant, takeaway or food stand, as typically served in Germany (unless the text says otherwise).
 Assume an average portion for that kind of place. If the text names a size, extras or sides, include them. Cooking oil, sauces and dressings that usually come with it count too: restaurants use more fat than home cooking.
@@ -18,17 +19,23 @@ Return:
 - "low", "high": a realistic kcal range for this dish across places
 - "parts": the main components with rough grams, e.g. "Fladenbrot 120 g, Dönerfleisch 130 g, Soße 40 g, Salat 60 g"
 - "note": one short sentence on what makes it vary most (e.g. "The sauce and the amount of meat change it most.")
+- "menu": only when you get a picture of a menu: the dish's line as the menu writes it (number, name, description). Otherwise "".
 Dish:
 `;
+
+const MENU_HINT = `
+
+The picture is the restaurant's menu (a photo or screenshot). Find the dish the user means: by its number (e.g. "23", "Nr. 23", "B4") or by its name. Use what the menu says about it: its name, description, ingredients, size and sides. If the menu shows nutrition or a weight, use that. If you can't find the dish, say so in "note" and estimate from what the user wrote.
+The user wrote: `;
 
 const SCHEMA = {
   type: 'OBJECT',
   properties: {
     name: { type: 'STRING' }, grams: { type: 'NUMBER' },
     kcal: { type: 'NUMBER' }, protein: { type: 'NUMBER' }, carbs: { type: 'NUMBER' }, fat: { type: 'NUMBER' },
-    low: { type: 'NUMBER' }, high: { type: 'NUMBER' }, parts: { type: 'STRING' }, note: { type: 'STRING' },
+    low: { type: 'NUMBER' }, high: { type: 'NUMBER' }, parts: { type: 'STRING' }, note: { type: 'STRING' }, menu: { type: 'STRING' },
   },
-  required: ['name', 'grams', 'kcal', 'protein', 'carbs', 'fat', 'low', 'high', 'parts', 'note'],
+  required: ['name', 'grams', 'kcal', 'protein', 'carbs', 'fat', 'low', 'high', 'parts', 'note', 'menu'],
 };
 
 const SIZES = [[0.5, '½'], [0.75, '¾'], [1, 'Normal'], [1.25, '1¼'], [1.5, '1½']];
@@ -43,9 +50,12 @@ export async function renderGuess(el, dateParam, mealId) {
   }
   el.innerHTML = `
     <section class="card">
-      <p class="hint">Type a dish from a restaurant or takeaway. Gemini estimates a typical portion.</p>
+      <p class="hint">Type a dish from a restaurant or takeaway, or add a photo of the menu and type the dish’s number. Gemini estimates a typical portion.</p>
       <form id="guess-form" autocomplete="off">
-        <input id="guess-q" placeholder="e.g. Döner Kebab, or Vietnamese rice with chicken and sauce" aria-label="Dish">
+        <input id="guess-q" placeholder="e.g. Döner Kebab, or 23 with a menu photo" aria-label="Dish name or number">
+        <label class="btn with-ic guess-photo">${icon('camera')} <span id="guess-photo-label">Add a menu photo or screenshot</span>
+          <input id="guess-img" type="file" accept="image/*" multiple hidden>
+        </label>
         <button class="btn primary wide" id="guess-go" type="submit" disabled>${icon('sparkles')} Estimate</button>
       </form>
       <p class="status" id="guess-status" role="status"></p>
@@ -55,20 +65,31 @@ export async function renderGuess(el, dateParam, mealId) {
   const go = $('#guess-go', el);
   const status = $('#guess-status', el);
   const out = $('#guess-out', el);
-  q.addEventListener('input', () => { go.disabled = !q.value.trim(); });
+  const img = $('#guess-img', el);
+  const ready = () => { go.disabled = !q.value.trim() && !img.files.length; };
+  q.addEventListener('input', ready);
+  img.addEventListener('change', () => {
+    const n = img.files.length;
+    $('#guess-photo-label', el).textContent = n ? `${n} menu picture${n === 1 ? '' : 's'} added · change` : 'Add a menu photo or screenshot';
+    q.placeholder = n ? 'Dish number or name, e.g. 23' : 'e.g. Döner Kebab, or 23 with a menu photo';
+    ready();
+  });
   q.focus();
 
   $('#guess-form', el).addEventListener('submit', async (e) => {
     e.preventDefault();
     const text = q.value.trim();
-    if (!text) return;
+    if (!text && !img.files.length) return;
     go.disabled = true;
     status.className = 'status';
     status.textContent = 'Estimating…';
     out.innerHTML = '';
     let g;
     try {
-      g = await generateJson(geminiKey(), [{ text: PROMPT + text }], SCHEMA, { temperature: 0.2, thinking: 512, onRetry: () => { status.textContent = 'Gemini didn’t answer properly, trying again…'; } });
+      const pics = await Promise.all([...img.files].slice(0, 4).map(shrinkImage));
+      const parts = [{ text: PROMPT + (pics.length ? MENU_HINT : '') + (text || '(no text: pick the dish that stands out, or the first main dish)') }];
+      for (const f of pics) parts.push({ inlineData: { mimeType: f.type || 'image/jpeg', data: await toBase64(f) } });
+      g = await generateJson(geminiKey(), parts, SCHEMA, { temperature: 0.2, thinking: 512, onRetry: () => { status.textContent = 'Gemini didn’t answer properly, trying again…'; } });
     } catch (err) {
       status.className = 'status error';
       status.textContent = err.message;
@@ -90,6 +111,7 @@ export async function renderGuess(el, dateParam, mealId) {
           <h2 class="card-title">${esc(g.name)}</h2>
           <p class="guess-kcal"><strong>${fmt(v.kcal, 'kcal')} kcal</strong> · P ${fmt(v.protein)} · C ${fmt(v.carbs)} · F ${fmt(v.fat)}</p>
           <p class="small muted">About ${fmt(g.grams * size)} g · usually ${fmt(g.low * size, 'kcal')}–${fmt(g.high * size, 'kcal')} kcal</p>
+          ${g.menu ? `<p class="small from-post">${icon('quote')} ${esc(g.menu)}</p>` : ''}
           ${g.parts ? `<p class="small muted">${esc(g.parts)}</p>` : ''}
           ${g.note ? `<p class="small muted">${esc(g.note)}</p>` : ''}
           <div class="chips guess-size" role="radiogroup" aria-label="Portion">${SIZES.map(([f, l]) => `<button type="button" class="chip${f === size ? ' active' : ''}" role="radio" aria-checked="${f === size}" data-size="${f}">${l}</button>`).join('')}</div>
