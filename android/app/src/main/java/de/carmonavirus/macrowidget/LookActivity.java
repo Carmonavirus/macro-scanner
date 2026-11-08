@@ -90,8 +90,13 @@ public class LookActivity extends Activity {
             look.save(this);
             StepService.refresh(this);
         });
+        check("Hide them while music is playing", look.lockHideMusic, b -> {
+            look.lockHideMusic = b;
+            look.save(this);
+            StepService.refresh(this);
+        });
         text(StepCounter.enabled(this)
-            ? "Shows today’s steps in the step counter notification on your lock screen."
+            ? "Shows today’s steps in the step counter notification on your lock screen. While any app plays music, they step aside for the cover art and come back when it stops."
             : "Works while Macro Widget counts your steps. Turn on “Count my steps” in the app first.").setAlpha(0.7f);
 
         Button reset = new Button(this);

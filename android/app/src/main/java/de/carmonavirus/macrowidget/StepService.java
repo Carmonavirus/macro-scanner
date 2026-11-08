@@ -14,9 +14,13 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
+import android.media.AudioPlaybackConfiguration;
 import android.os.Build;
 import android.os.IBinder;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -29,6 +33,34 @@ public class StepService extends Service implements SensorEventListener {
     private static final String CHANNEL_LOCK = "steps_lock"; // shown on the lock screen
     private static final int NOTIFICATION = 1;
     private long lastDraw;
+    private boolean musicPlaying;
+    private boolean shownOnLock;
+
+    /** Hears when any app starts or stops playing audio (no permission needed). */
+    private final AudioManager.AudioPlaybackCallback playback = new AudioManager.AudioPlaybackCallback() {
+        @Override
+        public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
+            boolean playing = isMusic(configs);
+            if (playing == musicPlaying) return;
+            musicPlaying = playing;
+            if (onLockScreen() != shownOnLock) foreground();
+        }
+    };
+
+    private static boolean isMusic(List<AudioPlaybackConfiguration> configs) {
+        if (configs == null) return false;
+        for (AudioPlaybackConfiguration c : configs) {
+            AudioAttributes a = c.getAudioAttributes();
+            if (a != null && a.getUsage() == AudioAttributes.USAGE_MEDIA) return true;
+        }
+        return false;
+    }
+
+    /** Steps go on the lock screen if turned on, and not while music (and its cover art) is there. */
+    private boolean onLockScreen() {
+        Look look = Look.load(this);
+        return look.lockSteps && !(look.lockHideMusic && musicPlaying);
+    }
 
     /** True when this phone has a step counter sensor. */
     static boolean hasSensor(Context c) {
@@ -79,6 +111,11 @@ public class StepService extends Service implements SensorEventListener {
             ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             nm.createNotificationChannel(ch);
         }
+        AudioManager am = getSystemService(AudioManager.class);
+        if (am != null) {
+            musicPlaying = isMusic(am.getActivePlaybackConfigurations());
+            am.registerAudioPlaybackCallback(playback, null);
+        }
         foreground();
         SensorManager sm = getSystemService(SensorManager.class);
         Sensor s = sm == null ? null : sm.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
@@ -97,6 +134,8 @@ public class StepService extends Service implements SensorEventListener {
     public void onDestroy() {
         SensorManager sm = getSystemService(SensorManager.class);
         if (sm != null) sm.unregisterListener(this);
+        AudioManager am = getSystemService(AudioManager.class);
+        if (am != null) am.unregisterAudioPlaybackCallback(playback);
         super.onDestroy();
     }
 
@@ -129,7 +168,8 @@ public class StepService extends Service implements SensorEventListener {
     private Notification notification(long steps) {
         PendingIntent open = PendingIntent.getActivity(this, 3, new Intent(this, MainActivity.class),
             PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        boolean lock = Look.load(this).lockSteps;
+        boolean lock = onLockScreen();
+        shownOnLock = lock;
         return new Notification.Builder(this, lock ? CHANNEL_LOCK : CHANNEL)
             .setVisibility(lock ? Notification.VISIBILITY_PUBLIC : Notification.VISIBILITY_SECRET)
             .setSmallIcon(R.drawable.ic_steps)
