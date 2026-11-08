@@ -16,6 +16,7 @@ final class Look {
     boolean showLeft = false;  // big numbers show what's left instead of what's eaten
     boolean showBar = true, showTiles = true, showSteps = true, showStatus = true, showRefresh = true;
     boolean lockSteps = false; // step counter notification shows on the lock screen
+    boolean lockHideMusic = true; // ...except while music plays (its cover art is there then)
 
     static Look load(Context c) {
         SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -30,6 +31,7 @@ final class Look {
         l.showStatus = p.getBoolean("showStatus", l.showStatus);
         l.showRefresh = p.getBoolean("showRefresh", l.showRefresh);
         l.lockSteps = p.getBoolean("lockSteps", l.lockSteps);
+        l.lockHideMusic = p.getBoolean("lockHideMusic", l.lockHideMusic);
         return l;
     }
 
@@ -38,7 +40,7 @@ final class Look {
             .putInt("textSize", textSize).putInt("opacity", opacity).putInt("theme", theme)
             .putBoolean("showLeft", showLeft).putBoolean("showBar", showBar).putBoolean("showTiles", showTiles)
             .putBoolean("showSteps", showSteps).putBoolean("showStatus", showStatus).putBoolean("showRefresh", showRefresh)
-            .putBoolean("lockSteps", lockSteps)
+            .putBoolean("lockSteps", lockSteps).putBoolean("lockHideMusic", lockHideMusic)
             .apply();
     }
 
