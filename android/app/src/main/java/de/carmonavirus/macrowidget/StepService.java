@@ -25,7 +25,8 @@ import java.util.Locale;
  * runs as a small foreground service with a silent notification.
  */
 public class StepService extends Service implements SensorEventListener {
-    private static final String CHANNEL = "steps";
+    private static final String CHANNEL = "steps";           // hidden from the lock screen
+    private static final String CHANNEL_LOCK = "steps_lock"; // shown on the lock screen
     private static final int NOTIFICATION = 1;
     private long lastDraw;
 
@@ -50,6 +51,9 @@ public class StepService extends Service implements SensorEventListener {
         }
     }
 
+    /** Redraw the notification, e.g. after the lock screen setting changed. */
+    static void refresh(Context c) { startIfEnabled(c); }
+
     static void stop(Context c) {
         c.stopService(new Intent(c, StepService.class));
     }
@@ -62,14 +66,20 @@ public class StepService extends Service implements SensorEventListener {
             NotificationChannel ch = new NotificationChannel(CHANNEL, "Step counter", NotificationManager.IMPORTANCE_MIN);
             ch.setDescription("Shown while Macro Widget counts your steps");
             ch.setShowBadge(false);
+            ch.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
             nm.createNotificationChannel(ch);
         }
-        Notification n = notification(Math.max(0, StepCounter.today(this)));
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(NOTIFICATION, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
-        } else {
-            startForeground(NOTIFICATION, n);
+        if (nm != null && nm.getNotificationChannel(CHANNEL_LOCK) == null) {
+            // Low (not min) importance, because phones leave min notifications off the lock screen. Still silent.
+            NotificationChannel ch = new NotificationChannel(CHANNEL_LOCK, "Steps on lock screen", NotificationManager.IMPORTANCE_LOW);
+            ch.setDescription("Your step count on the lock screen while Macro Widget counts your steps");
+            ch.setShowBadge(false);
+            ch.setSound(null, null);
+            ch.enableVibration(false);
+            ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            nm.createNotificationChannel(ch);
         }
+        foreground();
         SensorManager sm = getSystemService(SensorManager.class);
         Sensor s = sm == null ? null : sm.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
         if (s == null) { stopSelf(); return; }
@@ -79,6 +89,7 @@ public class StepService extends Service implements SensorEventListener {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        foreground();   // picks up a changed lock screen setting
         return START_STICKY;
     }
 
@@ -106,10 +117,21 @@ public class StepService extends Service implements SensorEventListener {
     @Override
     public IBinder onBind(Intent intent) { return null; }
 
+    private void foreground() {
+        Notification n = notification(Math.max(0, StepCounter.today(this)));
+        if (Build.VERSION.SDK_INT >= 34) {
+            startForeground(NOTIFICATION, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH);
+        } else {
+            startForeground(NOTIFICATION, n);
+        }
+    }
+
     private Notification notification(long steps) {
         PendingIntent open = PendingIntent.getActivity(this, 3, new Intent(this, MainActivity.class),
             PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        return new Notification.Builder(this, CHANNEL)
+        boolean lock = Look.load(this).lockSteps;
+        return new Notification.Builder(this, lock ? CHANNEL_LOCK : CHANNEL)
+            .setVisibility(lock ? Notification.VISIBILITY_PUBLIC : Notification.VISIBILITY_SECRET)
             .setSmallIcon(R.drawable.ic_steps)
             .setContentTitle(String.format(Locale.getDefault(), "%,d steps today", steps))
             .setContentText("Macro Widget is counting your steps")
