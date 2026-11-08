@@ -84,6 +84,16 @@ public class LookActivity extends Activity {
         check("“Updated” time", look.showStatus, b -> look.showStatus = b);
         check("Refresh button", look.showRefresh, b -> look.showRefresh = b);
 
+        heading("Lock screen");
+        check("Show my steps on the lock screen", look.lockSteps, b -> {
+            look.lockSteps = b;
+            look.save(this);
+            StepService.refresh(this);
+        });
+        text(StepCounter.enabled(this)
+            ? "Shows today’s steps in the step counter notification on your lock screen."
+            : "Works while Macro Widget counts your steps. Turn on “Count my steps” in the app first.").setAlpha(0.7f);
+
         Button reset = new Button(this);
         reset.setText("Back to normal");
         reset.setAllCaps(false);
@@ -94,6 +104,7 @@ public class LookActivity extends Activity {
             Look.reset(this);
             look = Look.load(this);
             MacroWidget.drawAll(this);
+            StepService.refresh(this);
             render();
         });
         text("Changes show on your home screen right away.").setAlpha(0.7f);
