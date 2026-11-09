@@ -96,19 +96,19 @@ export async function workoutsCard(date) {
           ${est?.kcal ? `<span class="workout-burn" aria-label="about ${est.kcal} kcal burned">${icon('flame')}<strong>≈ ${est.kcal}</strong><span class="muted">kcal</span></span>` : ''}
           <span class="chev">${icon('chevron-down')}</span>
         </summary>
-        <ul class="workout-ex">${w.exercises.map((ex) => `
-          <li><span>${esc(ex.title)}</span><span class="muted small">${[
+        <ul class="workout-ex">${w.exercises.map((ex, i) => `
+          <li><div class="ex-main"><span class="ex-title">${esc(ex.title)}</span><span class="muted small">${[
             `${ex.sets} set${ex.sets === 1 ? '' : 's'}`,
             ex.best ? `best ${esc(ex.best)}` : ex.reps ? `${ex.reps} reps` : '',
             ex.duration ? mins(Math.round(ex.duration / 60)) : '',
             ex.distance ? `${(ex.distance / 1000).toFixed(1).replace('.', ',')} km` : '',
-          ].filter(Boolean).join(' · ')}</span></li>`).join('')}
+          ].filter(Boolean).join(' · ')}</span></div>${est?.perExercise?.[i] ? `<span class="ex-kcal">${est.perExercise[i]} <small class="muted">kcal</small></span>` : ''}</li>`).join('')}
         </ul>
-        ${est?.kcal ? `<p class="muted small workout-burn-note">≈ ${est.kcal} kcal burned is an estimate on top of what your body burns at rest${
-          est.met ? `, counting the lifting as ${est.met === 6 ? 'vigorous' : est.met === 5 ? 'moderate' : 'light'} strength training` : ''
-        }${est.cardioKcal ? ` plus ${est.cardioKcal} kcal of cardio` : ''}. ${
+        ${est?.kcal ? `<p class="muted small workout-burn-note">≈ ${est.kcal} kcal on top of what your body burns at rest${
+          est.liftKcal ? `: ${est.baseKcal} for the time spent lifting and ${est.workKcal} for the work itself (each rep’s weight × how far it moves, so heavier sets count more)` : ''
+        }${est.cardioKcal ? `${est.liftKcal ? ', plus' : ':'} ${est.cardioKcal} for cardio` : ''}. ${
           est.assumedWeight ? `It assumes you weigh ${hevy.DEFAULT_WEIGHT} kg: <a href="#/goals">add your weight</a> for a better number.` : `Based on your weight of ${String(est.weight).replace('.', ',')} kg.`
-        } Hevy doesn’t track calories.</p>` : ''}
+        } A rough estimate: Hevy doesn’t track calories.</p>` : ''}
       </details>
     </section>`).join('');
 }
