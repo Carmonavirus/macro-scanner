@@ -398,6 +398,10 @@ dialog.sheet::backdrop { background: rgba(0,0,0,.45); }
 .workout-burn .ic { color: #f97316; }
 .workout-burn strong { font-size: 1.05rem; }
 .workout-burn-note { margin: 10px 2px 0; }
+.workout-ex li { align-items: center; }
+.workout-ex .ex-main { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.workout-ex .ex-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workout-ex .ex-kcal { font-weight: 600; white-space: nowrap; }
 
 /* ---------- v14: amount slider ---------- */
 .amount-slider { margin-top: 10px; }
