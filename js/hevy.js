@@ -142,3 +142,72 @@ export function autoSync() {
   if (!cfg?.key) return;
   if (Date.now() - Date.parse(cfg.lastSync || 0) > AUTO_SYNC_AFTER_MS) syncNow().catch(() => {});
 }
+
+// ---------- Calories burned (estimate) ----------
+// Hevy's API doesn't give calories, so we estimate them the usual way:
+//   kcal = (MET − 1) × body weight (kg) × hours
+// MET values from the Compendium of Physical Activities (2024). We subtract 1 MET, the
+// calories the body burns anyway at rest, so this is the *extra* burn, like the
+// "active calories" a watch shows and like the steps estimate (steps.js).
+//
+// Cardio exercises (matched by name) count with their own MET for their logged time;
+// running/walking with a distance use ~1 / 0.5 kcal per kg per km instead.
+// The rest of the session is lifting: how busy it was (working sets per minute) picks
+// light (3.5), moderate (5) or vigorous (6) resistance training. Lifting time is capped at
+// 4 minutes per set, so a workout left running in Hevy doesn't count hours of rest.
+
+const CARDIO = [
+  [/jump ?rope|skipping|seilspring/i, 11, 'jump rope'],
+  [/stair|step ?mill|stepper|treppe/i, 9, 'stair machine'],
+  [/burpee|hiit|battle ?rope|sprint|assault|air ?bike|echo ?bike|ski ?erg/i, 8, 'intervals'],
+  [/spin|cycl|bike|fahrrad|ergometer/i, 7, 'cycling'],
+  [/row(ing)? ?(machine|erg)|rower|concept ?2|rudern|^rowing$/i, 7, 'rowing'],
+  [/swim|schwimm/i, 7, 'swimming'],
+  [/\brun|jog|lauf(?!band)/i, 9.8, 'running'],
+  [/elliptical|cross ?trainer/i, 5, 'elliptical'],
+  [/hik|wander/i, 6, 'hiking'],
+  [/treadmill|laufband/i, 6, 'treadmill'],
+  [/walk|gehen|spazier/i, 3.5, 'walking'],
+];
+
+// Loaded carries and lunges are lifting even when logged with a distance.
+const NOT_CARDIO = /farmer|carry|lunge|ausfall|sled|schlitten|plank/i;
+const cardioMatch = (title) => (NOT_CARDIO.test(title || '') ? null : CARDIO.find(([re]) => re.test(title || '')));
+
+export const DEFAULT_WEIGHT = 75;
+
+/** Estimate the calories a workout burned. Returns { kcal, cardioKcal, liftKcal, met, weight, assumedWeight } or null. */
+export function estimateKcal(w, body) {
+  if (!w?.minutes) return null;
+  const assumedWeight = !(body?.weight > 0);
+  const weight = assumedWeight ? DEFAULT_WEIGHT : body.weight;
+  let cardioKcal = 0, cardioMin = 0, liftSets = 0;
+  for (const ex of w.exercises || []) {
+    const m = cardioMatch(ex.title);
+    // Only treat it as cardio when it was logged with time or distance (a "Bike" title could be a lift).
+    if (m && (ex.duration || ex.distance)) {
+      const [, met, kind] = m;
+      const min = (ex.duration || 0) / 60;
+      const km = (ex.distance || 0) / 1000;
+      const kmh = min ? km / (min / 60) : 0;
+      if (km && /running|treadmill|walking|hiking/.test(kind)) {
+        const perKm = kind === 'running' || (kind === 'treadmill' && kmh >= 7) ? 1.0 : 0.5;
+        cardioKcal += perKm * weight * km;
+      } else {
+        cardioKcal += (met - 1) * weight * (min / 60);
+      }
+      cardioMin += min;
+    } else {
+      liftSets += ex.sets || 0;
+    }
+  }
+  let liftKcal = 0, met = null;
+  if (liftSets) {
+    const liftMin = Math.min(Math.max(0, w.minutes - cardioMin), liftSets * 4);
+    const perMin = liftMin ? liftSets / liftMin : 0;
+    met = perMin >= 0.4 ? 6 : perMin >= 0.25 ? 5 : 3.5;
+    liftKcal = (met - 1) * weight * (liftMin / 60);
+  }
+  const kcal = Math.round((cardioKcal + liftKcal) / 5) * 5;
+  return { kcal, cardioKcal: Math.round(cardioKcal), liftKcal: Math.round(liftKcal), met, weight, assumedWeight };
+}

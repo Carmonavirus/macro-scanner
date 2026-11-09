@@ -3,6 +3,7 @@
 import * as hevy from '../hevy.js';
 import { $, esc, toast } from '../ui.js';
 import { icon } from '../icons.js';
+import { getBody } from '../db.js';
 
 const KEY_URL = 'https://hevy.com/settings?developer';
 
@@ -78,7 +79,8 @@ export async function workoutsCard(date) {
   if (!hevy.isConnected()) return '';
   const list = await hevy.workoutsOn(date);
   if (!list.length) return '';
-  return list.map((w) => `
+  const body = await getBody();
+  return list.map((w) => ({ w, est: hevy.estimateKcal(w, body) })).map(({ w, est }) => `
     <section class="card workout">
       <details>
         <summary class="meal-head">
@@ -91,6 +93,7 @@ export async function workoutsCard(date) {
               w.volume ? kg(w.volume) : '',
             ].filter(Boolean).join(' · ')}</p>
           </div>
+          ${est?.kcal ? `<span class="workout-burn" aria-label="about ${est.kcal} kcal burned">${icon('flame')}<strong>≈ ${est.kcal}</strong><span class="muted">kcal</span></span>` : ''}
           <span class="chev">${icon('chevron-down')}</span>
         </summary>
         <ul class="workout-ex">${w.exercises.map((ex) => `
@@ -101,6 +104,11 @@ export async function workoutsCard(date) {
             ex.distance ? `${(ex.distance / 1000).toFixed(1).replace('.', ',')} km` : '',
           ].filter(Boolean).join(' · ')}</span></li>`).join('')}
         </ul>
+        ${est?.kcal ? `<p class="muted small workout-burn-note">≈ ${est.kcal} kcal burned is an estimate on top of what your body burns at rest${
+          est.met ? `, counting the lifting as ${est.met === 6 ? 'vigorous' : est.met === 5 ? 'moderate' : 'light'} strength training` : ''
+        }${est.cardioKcal ? ` plus ${est.cardioKcal} kcal of cardio` : ''}. ${
+          est.assumedWeight ? `It assumes you weigh ${hevy.DEFAULT_WEIGHT} kg: <a href="#/goals">add your weight</a> for a better number.` : `Based on your weight of ${String(est.weight).replace('.', ',')} kg.`
+        } Hevy doesn’t track calories.</p>` : ''}
       </details>
     </section>`).join('');
 }

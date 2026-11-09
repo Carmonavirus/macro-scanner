@@ -24,7 +24,7 @@ export async function renderGoals(el) {
       </div>
       <p class="muted small" id="macro-kcal"></p>
       <h3 class="card-title">About you</h3>
-      <p class="hint small">Used to estimate the calories you burn with your steps. Without it, 75 kg and 175 cm are assumed.</p>
+      <p class="hint small">Used to estimate the calories you burn with your steps and Hevy workouts. Without it, 75 kg and 175 cm are assumed.</p>
       <div class="grid2">
         <label>Weight (kg)<input name="weight" type="text" inputmode="decimal" placeholder="e.g. 80" value="${body.weight > 0 ? fmt(body.weight) : ''}"></label>
         <label>Height (cm)<input name="height" type="text" inputmode="decimal" placeholder="e.g. 180" value="${body.height > 0 ? fmt(body.height) : ''}"></label>

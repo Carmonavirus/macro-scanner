@@ -2,6 +2,7 @@
 import { esc } from '../ui.js';
 
 export const CHANGES = [
+  { v: 'v66', date: '2026-11-09', items: ['Hevy workouts show an estimate of the calories you burned (🔥 ≈ N kcal), from the workout’s length, how many sets you did, any cardio and your weight in Goals. Open a workout to see how it was worked out.'] },
   { v: 'v65', date: '2026-11-06', items: ['Restaurant dish: add a photo or screenshot of the menu and just type the dish’s number.'] },
   { v: 'v64', date: '2026-11-06', items: ['Restaurant dish: type any dish (“Döner Kebab”, “rice with chicken and sauce”) and Gemini estimates a typical portion’s calories and macros. In Add food and Eat out.'] },
   { v: 'v63', date: '2026-11-05', items: ['Recipes tab: your saved meals are listed too, with calories and macros. Tap one to add it to today.'] },
